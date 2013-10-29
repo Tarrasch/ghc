@@ -16,7 +16,7 @@
 -- | CoreSyn holds all the main data types for use by for the Glasgow Haskell Compiler midsection
 module CoreSyn (
 	-- * Main data types
-        Expr(..), Alt, Bind(..), AltCon(..), Arg, Tickish(..),
+        Expr(..), Alt, Bind(..), AltCon(..), Arg, Tickish(..), ExprPtr(..),
         CoreProgram, CoreExpr, CoreAlt, CoreBind, CoreArg, CoreBndr,
         TaggedExpr, TaggedAlt, TaggedBind, TaggedArg, TaggedBndr(..),
 
@@ -47,6 +47,7 @@ module CoreSyn (
         tickishCounts, tickishScoped, tickishSoftScope, tickishFloatable,
         tickishCanSplit, mkNoCount, mkNoScope,
         tickishIsCode, tickishIgnoreCheap,
+        exprPtrCons,
         tickishContains,
 
         -- * Unfolding data types
@@ -499,7 +500,22 @@ data Tickish id =
                                 --   (uses same names as CCs)
     }
 
+  -- | A core note. These types of ticks only live after Core2Stg and
+  -- carry the core that a piece of Stg was generated from.
+  | CoreNote
+    { coreBind :: Var          -- ^ Name the core fragment is bound to
+    , coreNote :: ExprPtr Var  -- ^ Source covered
+    }
+
   deriving (Eq, Ord, Data, Typeable)
+
+-- | Pointer to a Core expression or case alternative. Ignored for the
+-- purpose of equality checks.
+data ExprPtr id = ExprPtr (Expr id)
+                | AltPtr (Alt id)
+                deriving (Data, Typeable)
+instance Eq (ExprPtr id)  where _ == _       = True
+instance Ord (ExprPtr id) where compare _ _  = EQ
 
 
 -- | A "counting tick" (where tickishCounts is True) is one that
@@ -536,6 +552,7 @@ tickishScoped Breakpoint{} = True
    -- stacks, but also this helps prevent the simplifier from moving
    -- breakpoints around and changing their result type (see #1531).
 tickishScoped SourceNote{} = True
+tickishScoped CoreNote{}   = True
 
 -- | Returns @True@ for a scoped tick (@tickishScoped@) that allows
 -- inserting new cost into its execution scope. For example, this
@@ -559,6 +576,7 @@ tickishScoped SourceNote{} = True
 -- reduced (by the need to call through "x" to get to "foo").
 tickishSoftScope :: Tickish id -> Bool
 tickishSoftScope SourceNote{} = True
+tickishSoftScope CoreNote{}   = True
 tickishSoftScope HpcTick{}    = True
 tickishSoftScope _tickish     = False  -- all the rest for now
 
@@ -602,6 +620,7 @@ mkNoScope _                           = panic "mkNoScope: Undefined split!"
 -- that does not have any associated execution cost.
 tickishIsCode :: Tickish id -> Bool
 tickishIsCode SourceNote{} = False
+tickishIsCode CoreNote{}   = False
 tickishIsCode _tickish     = True  -- all the rest for now
 
 -- | Whether the ticks should be removed on expressions that are cheap
@@ -633,6 +652,13 @@ tickishContains (SourceNote sp1 n1) (SourceNote sp2 n2)
   = n1 == n2 && containsSpan sp1 sp2
 tickishContains t1 t2
   = t1 == t2
+
+-- | Gives constructor of expr pointer or DEFAULT if not an
+-- alternative.
+exprPtrCons :: ExprPtr a -> AltCon
+exprPtrCons ExprPtr{}          = DEFAULT
+exprPtrCons (AltPtr (con,_,_)) = con
+
 \end{code}
 
 
@@ -1503,6 +1529,7 @@ seqTickish ProfNote{ profNoteCC = cc } = cc `seq` ()
 seqTickish HpcTick{} = ()
 seqTickish Breakpoint{ breakpointFVs = ids } = seqBndrs ids
 seqTickish SourceNote{} = ()
+seqTickish CoreNote{} = ()
 
 seqBndr :: CoreBndr -> ()
 seqBndr b = b `seq` ()
