@@ -2772,7 +2772,14 @@ reifyStack (Capability *cap, StgPtr sp)
     while((ret_info = get_ret_itbl((StgClosure *)p)) &&
           ret_info->i.type != STOP_FRAME) {
 #if defined(TABLES_NEXT_TO_CODE)
-        *(reified_payload++) = *(StgFunPtr *)p;
+        if( ((StgClosure *)p)->header.info == &stg_upd_frame_info) {
+          // In this case, it's more intersting to point to the function that
+          // the update frame is going to execute
+          *(reified_payload++) = ((StgUpdateFrame*)p)->updatee->header.info;
+        }
+        else {
+          *(reified_payload++) = *(StgFunPtr *)p;
+        }
 #else
         *(reified_payload++) = ret_info->i.entry;
 #endif
