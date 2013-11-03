@@ -436,6 +436,13 @@ stg_raisezh(P_ exception)
     jump stg_raiseWithStackzh (exception, reified_stack);
 }
 
+stg_reifyStackzh(P_ exception)
+{
+    W_ reified_stack;
+    ("ptr" reified_stack) = ccall reifyStack (MyCapability() "ptr", Sp "ptr");
+    return (reified_stack);
+}
+
 stg_raiseWithStackzh /* explicit stack */
 /*
  * args : R1 :: Exception, R2 :: stack
