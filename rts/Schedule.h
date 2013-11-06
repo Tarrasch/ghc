@@ -44,6 +44,9 @@ void wakeUpRts(void);
 /* raiseExceptionHelper */
 StgWord raiseExceptionHelper (StgRegTable *reg, StgTSO *tso, StgClosure *exception);
 
+/* countStackSize */
+StgWord countStackSize (StgPtr sp);
+
 /* reifyStack */
 StgArrWords *reifyStack (Capability* cap, StgPtr sp);
 

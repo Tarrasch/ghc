@@ -2732,6 +2732,34 @@ raiseExceptionHelper (StgRegTable *reg, StgTSO *tso, StgClosure *exception)
 }
 
 /* -----------------------------------------------------------------------------
+   countStackSize
+
+   Count number of frames on the whole stack. O(n) in time as it will traverse
+   the stack.
+
+   @param p Pointer to the stack, it could typically be `my_tso->stackobj->sp`
+   -------------------------------------------------------------------------- */
+
+StgWord
+countStackSize (StgPtr p)
+{
+    const StgRetInfoTable* ret_info;
+    StgWord framecount;
+    framecount = 0;
+
+    while((ret_info = get_ret_itbl((StgClosure *)p)) &&
+          ret_info->i.type != STOP_FRAME) {
+        framecount++;
+
+        if (ret_info->i.type == UNDERFLOW_FRAME)
+            p = ((StgUnderflowFrame*)p)->next_chunk->sp;
+        else
+            p += stack_frame_sizeW((StgClosure *)p);
+    }
+    return framecount;
+}
+
+/* -----------------------------------------------------------------------------
    reifyStack
 
    This function is called by the raise# primitve, to reify the STG stack as an
@@ -2746,20 +2774,9 @@ reifyStack (Capability *cap, StgPtr sp)
     StgArrWords* reified;
     StgFunPtr *reified_payload;
 
-    framecount = 0;
-
     // Determine the length of the array we need to allocate to
     // store the stack frame pointer array
-    StgPtr p = sp;
-    while((ret_info = get_ret_itbl((StgClosure *)p)) &&
-          ret_info->i.type != STOP_FRAME) {
-        framecount++;
-
-        if (ret_info->i.type == UNDERFLOW_FRAME)
-            p = ((StgUnderflowFrame*)p)->next_chunk->sp;
-        else
-            p += stack_frame_sizeW((StgClosure *)p);
-    }
+    framecount = countStackSize(sp);
 
     // Allocate array of that size. The length will be stored in
     // the StgArrWords, so we don't need any terminators
@@ -2768,7 +2785,7 @@ reifyStack (Capability *cap, StgPtr sp)
 
     // Crawl the stack again, but this time filling in the
     // newly-allocated array
-    p = sp;
+    StgPtr p = sp;
     while((ret_info = get_ret_itbl((StgClosure *)p)) &&
           ret_info->i.type != STOP_FRAME) {
 #if defined(TABLES_NEXT_TO_CODE)
