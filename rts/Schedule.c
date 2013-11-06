@@ -2792,7 +2792,7 @@ reifyStack (Capability *cap, StgPtr sp)
         if( ((StgClosure *)p)->header.info == &stg_upd_frame_info) {
           // In this case, it's more intersting to point to the function that
           // the update frame is going to execute
-          *(reified_payload++) = ((StgUpdateFrame*)p)->updatee->header.info;
+          *(reified_payload++) = (StgFunPtr)(((StgUpdateFrame*)p)->updatee->header.info);
         }
         else {
           *(reified_payload++) = *(StgFunPtr *)p;
