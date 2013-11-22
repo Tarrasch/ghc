@@ -1155,4 +1155,14 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 	return info;
 }
 
+StgWord dwarf_lookup_ip(void *ip, DwarfUnit **p_unit, DebugInfo *infos, int max_num_infos)
+{
+    DwarfProc *proc = dwarf_lookup_proc(ip, p_unit);
+    if (proc == NULL) {
+      return 0;
+    }
+    StgWord infoCount = dwarf_get_debug_info(*p_unit, proc, infos, max_num_infos);
+    return infoCount;
+}
+
 #endif /* USE_DWARF */
