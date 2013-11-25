@@ -1033,6 +1033,15 @@ void dwarf_trace_unaccounted(DwarfUnit *unit, StgBool put_module)
 }
 #endif
 
+void dwarf_dump_units(void);
+void dwarf_dump_units(void)
+{
+  DwarfUnit *unit;
+  for (unit = dwarf_units; unit; unit = unit->next) {
+    dwarf_dump_tables(unit);
+  }
+}
+
 void dwarf_init_lookup(void)
 {
 	// Read debug data - will be used later in actual lookups. For the
