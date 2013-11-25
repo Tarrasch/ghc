@@ -1115,8 +1115,8 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 			if (!strcmp(infos[info-1].file, unit->name)) {
 				// Stop recursing to parents then - that would only
 				// dull the precision.
-				stopRecurse = 1;
-				return info;
+				// stopRecurse = 1; // ARASH: We try to get more output!
+				// return info; // ARASH: I don't think makes sense...
 			}
 			break;
 		}
@@ -1137,6 +1137,8 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 			if (!stopRecurse &&
 			    proc->parent_id <= unit->max_proc_id &&
 			    (proc = unit->procs_by_id[proc->parent_id])) {
+                                /* printf(" jumped to parent %s!! (Unit %s)\n", proc->name, unit->name); */
+                                /* return info; */
 
 				// Continue at parent
 				dbg = proc->debug_data;
