@@ -2830,7 +2830,7 @@ dumpStack (StgArrWords *stack)
 
     // Pointer count
     StgFunPtr *ptrs = (StgFunPtr *)stack->payload;
-    StgWord ptrCount = stack->bytes; // it's actually word count
+    StgWord ptrCount = stack->bytes / sizeof(void*);
     StgWord i;
     StgBool putHeader = 0;
     int num_skipped = 0;

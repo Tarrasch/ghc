@@ -123,7 +123,7 @@ stgAllocArrWords(Capability *cap, size_t size_in_bytes)
 
     /* allocate and fill it in */
     arr = (StgArrWords *)allocate(cap, total_size_in_words);
-    SET_ARR_HDR(arr, &stg_ARR_WORDS_info, CCCS, data_size_in_words);
+    SET_ARR_HDR(arr, &stg_ARR_WORDS_info, CCCS, size_in_bytes);
 
     return arr;
 }
