@@ -1673,27 +1673,6 @@ primop  DumpStackOp "dumpStack#" GenPrimOp
    out_of_line = True
    has_side_effects = True
 
-primop  DwarfInit "dwarfInit#" GenPrimOp
-   State# RealWorld -> State# RealWorld
-   with
-   out_of_line = True
-   has_side_effects = True
-
-primop  DwarfFree "dwarfFree#" GenPrimOp
-   State# RealWorld -> State# RealWorld
-   with
-   out_of_line = True
-   has_side_effects = True
-
-primop DwarfLookupIp "dwarfLookupIp#" GenPrimOp
-   Addr# -> -- Instruction pointer
-   MutableByteArray# s -> -- Where to write result
-   State# s ->
-   (# State# s, Int#, Addr# #) -- ( num_written, DwarfUnit )
-   with
-   out_of_line = True
-   has_side_effects = True
-
 primop  MaskAsyncExceptionsOp "maskAsyncExceptions#" GenPrimOp
         (State# RealWorld -> (# State# RealWorld, a #))
      -> (State# RealWorld -> (# State# RealWorld, a #))

@@ -8,14 +8,12 @@
 
 #include "Hash.h"
 
-typedef struct DwarfUnit_ DwarfUnit;
 typedef struct DwarfProc_ DwarfProc;
 typedef enum DwarfSource_ DwarfSource;
-typedef struct DebugInfo_ DebugInfo;
 
 struct DwarfUnit_ {
-	char *name;
-	char *comp_dir;
+  PUBLIC_DWARF_UNIT_MEMBERS;
+  char *comp_dir;
 	void *low_pc, *high_pc;
 	StgWord8 *debug_data;
 	DwarfProc *procs;
@@ -51,21 +49,12 @@ extern DwarfUnit *dwarf_units;
 void dwarf_load(void);
 DwarfUnit *dwarf_get_unit(char *name);
 DwarfProc *dwarf_get_proc(DwarfUnit *unit, char *name);
-void dwarf_free(void);
 
 void dwarf_init_lookup(void);
 DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **unit);
 
-struct DebugInfo_ {
-	StgWord16 sline, scol, eline, ecol;
-	char *file;
-	char *name;
-	StgWord depth;
-};
 
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos);
-
-StgWord dwarf_lookup_and_write(void *ip, StgArrWords *array, DwarfUnit **p_unit);
 
 #endif // USE_DWARF
 

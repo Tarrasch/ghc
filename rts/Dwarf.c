@@ -822,6 +822,18 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 	return proc;
 }
 
+// Unlike dwarf_load and dwarf_init_lookup, this function is initializing dwarf
+// completely and acts similar to dwarf_free() because it has no effect when
+// called twice
+void dwarf_ensure_init()
+{
+  if (dwarf_units == NULL && dwarf_ghc_debug_data == NULL) {
+    // Otherwise it's already initialized
+    dwarf_load();
+    dwarf_init_lookup();
+  }
+}
+
 void dwarf_free()
 {
 	DwarfUnit *unit;
@@ -1068,6 +1080,7 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 	return NULL;
 }
 
+// You can set infos to NULL, it will then just count (up to max_infos)
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos)
 {
 	// Read debug information
@@ -1095,31 +1108,34 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 				done = 1;
 			break;
 
-		// This is what we are looking for: Data to copy
-		case EVENT_DEBUG_SOURCE: {
-			infos[info].sline = word16LE(dbg);
-			infos[info].scol  = word16LE(dbg+2);
-			infos[info].eline = word16LE(dbg+4);
-			infos[info].ecol  = word16LE(dbg+6);
-			int len = strlen((char *)dbg+8),
-			    len2 = strlen((char *)dbg+9+len);
-			if (10 + len + len2 > size) {
-				errorBelch("Missing string terminator for module record! Probably corrupt debug data.");
-				return info;
-			}
-			infos[info].file = (char *)dbg+8;
-			infos[info].name = (char *)dbg+9+len;
-			infos[info].depth = depth;
-			info++;
-			// Did we find a source annotation for our own module?
-			if (!strcmp(infos[info-1].file, unit->name)) {
-				// Stop recursing to parents then - that would only
-				// dull the precision.
-				// stopRecurse = 1; // ARASH: We try to get more output!
-				// return info; // ARASH: I don't think makes sense...
-			}
-			break;
-		}
+    // This is what we are looking for: Data to copy
+        case EVENT_DEBUG_SOURCE: {
+            char *file_name = (char *)dbg+8;
+            if (infos != NULL) {
+                infos[info].sline = word16LE(dbg);
+                infos[info].scol  = word16LE(dbg+2);
+                infos[info].eline = word16LE(dbg+4);
+                infos[info].ecol  = word16LE(dbg+6);
+                int len = strlen(file_name),
+                    len2 = strlen((char *)dbg+9+len);
+                if (10 + len + len2 > size) {
+                    errorBelch("Missing string terminator for module record! Probably corrupt debug data.");
+                    return info;
+                }
+                infos[info].file = file_name;
+                infos[info].name = (char *)dbg+9+len;
+                infos[info].depth = depth;
+            }
+            info++;
+            // Did we find a source annotation for our own module?
+            if (!strcmp(file_name, unit->name)) {
+                // Stop recursing to parents then - that would only
+                // dull the precision.
+                // stopRecurse = 1; // ARASH: We try to get more output!
+                // return info; // ARASH: I don't think makes sense...
+            }
+            break;
+        }
 
 		// These can be safely ignored
 		case EVENT_DEBUG_CORE:
@@ -1152,16 +1168,26 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 	return info;
 }
 
-StgWord dwarf_lookup_and_write(void *ip, StgArrWords *array, DwarfUnit** p_unit)
+StgWord dwarf_lookup_ip(void *ip, DwarfUnit** p_unit, DebugInfo *infos, int max_num_infos)
 {
     DwarfProc *proc = dwarf_lookup_proc(ip, p_unit);
     if (proc == NULL) {
-      return 0;
+        return 0;
     }
-    DebugInfo *infos = (DebugInfo*)array->payload;
-    StgWord max_num_infos = array->bytes / sizeof(DebugInfo);
-    StgWord infoCount = dwarf_get_debug_info(*p_unit, proc, infos, max_num_infos);
-    return infoCount;
+    StgWord info_count = dwarf_get_debug_info(*p_unit, proc, infos, max_num_infos);
+    return info_count;
+}
+
+StgWord dwarf_addr_num_infos(void *ip)
+{
+    DwarfUnit *unit;
+    DwarfProc *proc = dwarf_lookup_proc(ip, &unit);
+    const StgWord a_lot = 100;
+    StgWord info_count = dwarf_get_debug_info(unit, proc, NULL, a_lot);
+    if (info_count == a_lot) {
+        errorBelch("Suspiciously much dwarf data. Maybe circular reference?");
+    }
+    return info_count;
 }
 
 #endif /* USE_DWARF */
