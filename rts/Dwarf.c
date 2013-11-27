@@ -822,10 +822,10 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 	return proc;
 }
 
-// Unlike dwarf_load and dwarf_init_lookup, this method is initializing dwarf
+// Unlike dwarf_load and dwarf_init_lookup, this function is initializing dwarf
 // completely and acts similar to dwarf_free() because it has no effect when
 // called twice
-void dwarf_init()
+void dwarf_ensure_init()
 {
   if (dwarf_units == NULL && dwarf_ghc_debug_data == NULL) {
     // Otherwise it's already initialized
