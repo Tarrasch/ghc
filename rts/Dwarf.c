@@ -1159,14 +1159,16 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 	return info;
 }
 
-StgWord dwarf_lookup_ip(void *ip, DwarfUnit **p_unit, DebugInfo *infos, int max_num_infos)
+StgWord dwarf_lookup_ip(void *ip, DwarfProc **p_proc, DwarfUnit **p_unit, DebugInfo *infos, int max_num_infos)
 {
-    DwarfProc *proc = dwarf_lookup_proc(ip, p_unit);
-    if (proc == NULL) {
-      return 0;
+    if (*p_proc == NULL) {
+        *p_proc = dwarf_lookup_proc(ip, p_unit);
     }
-    StgWord infoCount = dwarf_get_debug_info(*p_unit, proc, infos, max_num_infos);
-    return infoCount;
+    if (*p_proc == NULL) {
+        return 0;
+    }
+    StgWord info_count = dwarf_get_debug_info(*p_unit, *p_proc, infos, max_num_infos);
+    return info_count;
 }
 
 StgWord dwarf_addr_num_infos(void *ip)
