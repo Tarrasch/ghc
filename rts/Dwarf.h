@@ -67,7 +67,7 @@ struct DebugInfo_ {
 
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos);
 
-StgWord dwarf_lookup_and_write(void *ip, StgArrWords *array, DwarfUnit **p_unit);
+StgWord dwarf_lookup_ip(void *ip, DwarfUnit** p_unit, DebugInfo *infos, int max_num_infos);
 
 #endif // USE_DWARF
 
