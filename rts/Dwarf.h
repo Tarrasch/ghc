@@ -51,6 +51,7 @@ extern DwarfUnit *dwarf_units;
 void dwarf_load(void);
 DwarfUnit *dwarf_get_unit(char *name);
 DwarfProc *dwarf_get_proc(DwarfUnit *unit, char *name);
+void dwarf_init();
 void dwarf_free(void);
 
 void dwarf_init_lookup(void);
