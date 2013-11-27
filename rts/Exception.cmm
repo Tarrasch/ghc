@@ -650,29 +650,3 @@ stg_dumpStackzh (P_ reified_stack)
     ccall dumpStack(reified_stack "ptr");
     return ();
 }
-
-stg_dwarfInitzh ()
-{
-    ccall dwarf_load();
-    ccall dwarf_init_lookup();
-    return ();
-}
-
-stg_dwarfFreezh ()
-{
-    ccall dwarf_free();
-    return ();
-}
-
-stg_dwarfLookupIpzh (P_ ip, P_ resultByteArray)
-{
-    W_ num_infos;
-    P_ dwarf_unit_result;
-
-again:
-    STK_CHK_GEN_N (SIZEOF_W);
-    MAYBE_GC(again);
-    dwarf_unit_result = Sp - SIZEOF_W;
-    (num_infos) = ccall dwarf_lookup_and_write(ip "ptr", resultByteArray "ptr", dwarf_unit_result "ptr");
-    return (num_infos, P_[dwarf_unit_result]);
-}
