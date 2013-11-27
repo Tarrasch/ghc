@@ -1172,10 +1172,10 @@ StgWord dwarf_lookup_ip(void *ip, DwarfUnit** p_unit, DebugInfo *infos, int max_
 {
     DwarfProc *proc = dwarf_lookup_proc(ip, p_unit);
     if (proc == NULL) {
-      return 0;
+        return 0;
     }
-    StgWord infoCount = dwarf_get_debug_info(*p_unit, proc, infos, max_num_infos);
-    return infoCount;
+    StgWord info_count = dwarf_get_debug_info(*p_unit, proc, infos, max_num_infos);
+    return info_count;
 }
 
 StgWord dwarf_addr_num_infos(void *ip)
