@@ -8,7 +8,7 @@
 #include "Rts.h"
 #include "RtsUtils.h"
 
-#include "Dwarf.h"
+#include "Hash.h"
 #include "Trace.h"
 
 #include "dwarf.h"

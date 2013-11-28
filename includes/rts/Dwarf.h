@@ -1,12 +1,10 @@
-
 #ifndef DWARF_H
 #define DWARF_H
 
-#include "BeginPrivate.h"
+// Since you should be able to see this from base, we can't guard on USE_DWARF
+// (But the c-file can)
 
-#ifdef USE_DWARF
-
-#include "Hash.h"
+typedef struct hashtable HashTable; /* Forward declare */
 
 typedef struct DwarfUnit_ DwarfUnit;
 typedef struct DwarfProc_ DwarfProc;
@@ -22,7 +20,7 @@ struct DwarfUnit_ {
 	StgWord proc_count;
 	StgWord16 max_proc_id;
 
-	HashTable *proc_table; // by name
+	HashTable *proc_table; // by name // s/HashTable/void
 	DwarfProc **procs_by_id; // by id
 	DwarfProc **procs_by_pc; // by low_pc
 
@@ -65,8 +63,8 @@ struct DebugInfo_ {
 
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos);
 
-#endif // USE_DWARF
+StgWord dwarf_lookup_ip(void *ip, DwarfUnit** p_unit, DebugInfo *infos, int max_num_infos);
 
-#include "EndPrivate.h"
+StgWord dwarf_addr_num_infos(void *ip);
 
 #endif // DWARF_H
