@@ -1,4 +1,3 @@
-
 // For reading DWARF debug data of our own executable as well as all
 // dynamically linked-in libraries. Uses libdwarf, this is
 // roughly adapted from their simplereader.c example.
@@ -8,7 +7,7 @@
 #include "Rts.h"
 #include "RtsUtils.h"
 
-#include "Dwarf.h"
+#include "Hash.h"
 #include "Trace.h"
 
 #include "dwarf.h"
@@ -44,11 +43,19 @@
 #endif //USE_DL_ITERATE_PHDR
 
 // Global compilation unit list
-DwarfUnit *dwarf_units = 0;
+DwarfUnit *dwarf_units;
 
 // Debugging data
-size_t dwarf_ghc_debug_data_size = 0;
-void *dwarf_ghc_debug_data = 0;
+size_t dwarf_ghc_debug_data_size;
+void *dwarf_ghc_debug_data;
+
+
+#ifdef THREADED_RTS
+// Lock (if multiple threads write to the globals using dwarf_ensure_init())
+Mutex dwarf_mutex;
+#endif
+int dwarf_ref; // When dwarf_ref > 0, then dwarf data should be loaded. But
+               // when it is == 0, it may also be loaded.
 
 #define GHC_DEBUG_DATA_SECTION ".debug_ghc"
 
@@ -63,6 +70,7 @@ struct seg_space_
 };
 typedef struct seg_space_ seg_space;
 
+// Internal helpers
 static void dwarf_get_code_bases(Elf *elf, seg_space *seg);
 static void dwarf_load_ghc_debug_data(Elf *elf);
 static void dwarf_load_symbols(char *file, Elf *elf, seg_space *seg);
@@ -72,6 +80,7 @@ static void dwarf_load_dies(DwarfUnit *unit, Dwarf_Debug dbg, Dwarf_Die die, seg
 static void dwarf_load_proc_die(DwarfUnit *unit, Dwarf_Debug dbg, Dwarf_Die die, seg_space *seg);
 static void dwarf_load_block_die(DwarfUnit *unit, Dwarf_Debug dbg, Dwarf_Die die, seg_space *seg);
 static char *dwarf_findname(Dwarf_Die die);
+static void dwarf_init_lookup(void);
 
 static DwarfUnit *dwarf_new_unit(char *name, char *comp_dir);
 static DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name, Dwarf_Addr low_pc, Dwarf_Addr high_pc,
@@ -81,12 +90,27 @@ StgWord16 word16LE(StgWord8 *p);
 
 void dwarf_associate_debug_data(StgBool trace);
 
+void initDwarf() {
+  dwarf_units = NULL;
+  dwarf_ghc_debug_data_size = 0;
+  dwarf_ghc_debug_data = NULL;
+#ifdef THREADED_RTS
+  initMutex(&dwarf_mutex);
+#endif
+}
+
+int dwarf_is_loaded() {
+  return dwarf_units != NULL;
+}
+
 #ifndef USE_DL_ITERATE_PHDR
 
-void dwarf_load()
+void dwarf_force_load()
 {
-	// Clear previous data, if any
-	dwarf_free();
+        if (dwarf_is_loaded()) {
+                errorBelch("Dwarf is already loaded!");
+                return;
+        }
 
 	// Initialize ELF library
 	if (elf_version(EV_CURRENT) == EV_NONE) {
@@ -159,13 +183,14 @@ void dwarf_load()
 	}
 
 	fclose(map_file);
+        dwarf_init_lookup();
 }
 
 #else // USE_DL_ITERATE_PHDR
 
 int dwarf_load_by_phdr(struct dl_phdr_info *info, size_t size, void *data);
 
-void dwarf_load()
+void dwarf_force_load()
 {
 	// Initialize ELF library
 	if (elf_version(EV_CURRENT) == EV_NONE) {
@@ -186,6 +211,7 @@ void dwarf_load()
 	struct dwarf_state state = { exe_path };
 	dl_iterate_phdr(&dwarf_load_by_phdr, &state);
 
+        dwarf_init_lookup();
 }
 
 int dwarf_load_by_phdr(struct dl_phdr_info *info, size_t size, void *data)
@@ -822,8 +848,11 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 	return proc;
 }
 
-void dwarf_free()
+void dwarf_force_unload()
 {
+        if (!dwarf_is_loaded()) {
+                errorBelch("Dwarf is not even loaded!");
+        }
 	DwarfUnit *unit;
 	while ((unit = dwarf_units)) {
 		dwarf_units = unit->next;
@@ -1059,6 +1088,7 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 	return NULL;
 }
 
+// You can set infos to NULL, it will then just count (up to max_infos)
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos)
 {
 	// Read debug information
@@ -1086,24 +1116,27 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 				done = 1;
 			break;
 
-		// This is what we are looking for: Data to copy
-		case EVENT_DEBUG_SOURCE: {
-			infos[info].sline = word16LE(dbg);
-			infos[info].scol  = word16LE(dbg+2);
-			infos[info].eline = word16LE(dbg+4);
-			infos[info].ecol  = word16LE(dbg+6);
-			int len = strlen((char *)dbg+8),
-			    len2 = strlen((char *)dbg+9+len);
-			if (10 + len + len2 > size) {
-				errorBelch("Missing string terminator for module record! Probably corrupt debug data.");
-				return info;
-			}
-			infos[info].file = (char *)dbg+8;
-			infos[info].name = (char *)dbg+9+len;
-			infos[info].depth = depth;
+    // This is what we are looking for: Data to copy
+    case EVENT_DEBUG_SOURCE: {
+      int len = strlen((char *)dbg+8),
+          len2 = strlen((char *)dbg+9+len);
+      if (10 + len + len2 > size) {
+        errorBelch("Missing string terminator for module record! Probably corrupt debug data.");
+        return info;
+      }
+      char *file_name = (char *)dbg+8;
+      if (infos != NULL) {
+        infos[info].sline = word16LE(dbg);
+        infos[info].scol  = word16LE(dbg+2);
+        infos[info].eline = word16LE(dbg+4);
+        infos[info].ecol  = word16LE(dbg+6);
+        infos[info].file = file_name;
+        infos[info].name = (char *)dbg+9+len;
+        infos[info].depth = depth;
+      }
 			info++;
 			// Did we find a source annotation for our own module?
-			if (!strcmp(infos[info-1].file, unit->name)) {
+			if (!strcmp(file_name, unit->name)) {
 				// Stop recursing to parents then - that would only
 				// dull the precision.
 				stopRecurse = 1;
@@ -1139,6 +1172,57 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 		}
 	}
 	return info;
+}
+
+StgWord dwarf_lookup_ip(void *ip, DwarfProc **p_proc, DwarfUnit **p_unit, DebugInfo *infos, int max_num_infos)
+{
+    if (*p_proc == NULL) {
+        *p_proc = dwarf_lookup_proc(ip, p_unit);
+    }
+    if (*p_proc == NULL) {
+        return 0;
+    }
+    StgWord info_count = dwarf_get_debug_info(*p_unit, *p_proc, infos, max_num_infos);
+    return info_count;
+}
+
+StgWord dwarf_addr_num_infos(void *ip)
+{
+    DwarfUnit *unit;
+    DwarfProc *proc = dwarf_lookup_proc(ip, &unit);
+    const StgWord a_lot = 100;
+    StgWord info_count = dwarf_get_debug_info(unit, proc, NULL, a_lot);
+    if (info_count == a_lot) {
+        errorBelch("Suspiciously much dwarf data. Maybe circular reference?");
+    }
+    return info_count;
+}
+
+void dwarf_inc_ref(void) {
+        ACQUIRE_LOCK(&dwarf_mutex);
+        dwarf_ref++;
+        if (!dwarf_is_loaded()) {
+                // If isn't initialized
+                dwarf_force_load();
+        }
+        RELEASE_LOCK(&dwarf_mutex);
+}
+
+void dwarf_dec_ref(void) {
+        ACQUIRE_LOCK(&dwarf_mutex);
+        dwarf_ref--;
+        RELEASE_LOCK(&dwarf_mutex);
+}
+
+StgBool dwarf_try_unload(void) {
+        StgBool will_unload;
+        ACQUIRE_LOCK(&dwarf_mutex);
+        will_unload = dwarf_ref == 0 && dwarf_is_loaded();
+        if (will_unload) {
+                dwarf_force_unload();
+        }
+        RELEASE_LOCK(&dwarf_mutex);
+        return will_unload;
 }
 
 #endif /* USE_DWARF */
