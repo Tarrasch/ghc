@@ -1171,33 +1171,33 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
 			break;
 
     // This is what we are looking for: Data to copy
-    case EVENT_DEBUG_SOURCE: {
-      if (infos != NULL) {
-        infos[info].sline = word16LE(dbg);
-        infos[info].scol  = word16LE(dbg+2);
-        infos[info].eline = word16LE(dbg+4);
-        infos[info].ecol  = word16LE(dbg+6);
-        int len = strlen((char *)dbg+8),
-            len2 = strlen((char *)dbg+9+len);
-        if (10 + len + len2 > size) {
-          errorBelch("Missing string terminator for module record! Probably corrupt debug data.");
-          return info;
+        case EVENT_DEBUG_SOURCE: {
+            char *file_name = (char *)dbg+8;
+            if (infos != NULL) {
+                infos[info].sline = word16LE(dbg);
+                infos[info].scol  = word16LE(dbg+2);
+                infos[info].eline = word16LE(dbg+4);
+                infos[info].ecol  = word16LE(dbg+6);
+                int len = strlen(file_name),
+                    len2 = strlen((char *)dbg+9+len);
+                if (10 + len + len2 > size) {
+                    errorBelch("Missing string terminator for module record! Probably corrupt debug data.");
+                    return info;
+                }
+                infos[info].file = file_name;
+                infos[info].name = (char *)dbg+9+len;
+                infos[info].depth = depth;
+            }
+            info++;
+            // Did we find a source annotation for our own module?
+            if (!strcmp(file_name, unit->name)) {
+                // Stop recursing to parents then - that would only
+                // dull the precision.
+                // stopRecurse = 1; // ARASH: We try to get more output!
+                // return info; // ARASH: I don't think makes sense...
+            }
+            break;
         }
-        char *file_name = (char *)dbg+8;
-        infos[info].file = file_name;
-        infos[info].name = (char *)dbg+9+len;
-        infos[info].depth = depth;
-      }
-			info++;
-			// Did we find a source annotation for our own module?
-			if (!strcmp(file_name, unit->name)) {
-				// Stop recursing to parents then - that would only
-				// dull the precision.
-				// stopRecurse = 1; // ARASH: We try to get more output!
-				// return info; // ARASH: I don't think makes sense...
-			}
-			break;
-		}
 
 		// These can be safely ignored
 		case EVENT_DEBUG_CORE:
