@@ -12,8 +12,8 @@ typedef struct DwarfProc_ DwarfProc;
 typedef enum DwarfSource_ DwarfSource;
 
 struct DwarfUnit_ {
-	char *name;
-	char *comp_dir;
+  PUBLIC_DWARF_UNIT_MEMBERS;
+  char *comp_dir;
 	void *low_pc, *high_pc;
 	StgWord8 *debug_data;
 	DwarfProc *procs;

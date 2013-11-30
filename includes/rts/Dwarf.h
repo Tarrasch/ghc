@@ -15,6 +15,23 @@ struct DebugInfo_ {
 
 struct DwarfUnit_ ;
 
+
+#define PUBLIC_DWARF_UNIT_MEMBERS \
+  char *name; \
+
+// This struct contains the "public" portions of a DwarfUnit
+//
+// Note: Alternatively you can make the whole DwarfUnit (and also DwarfProc
+// eventually) public. At that point you can completely erase the other
+// "Dwarf.h" and only keep this header-file.
+//
+// A third option is to have C-functions which just work as getters.
+typedef struct PublicDwarfUnit_ {
+  PUBLIC_DWARF_UNIT_MEMBERS
+} PublicDwarfUnit;
+
+
+
 void dwarf_ensure_init(void);
 void dwarf_free(void);
 StgWord dwarf_lookup_ip(void *ip, DwarfUnit** p_unit, DebugInfo *infos, int max_num_infos);
