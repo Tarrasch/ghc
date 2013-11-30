@@ -2815,7 +2815,7 @@ reifyStack (Capability *cap, StgPtr sp)
    Dumps a reified stack to the console.
    -------------------------------------------------------------------------- */
 
-#define MAX_DEBUG_INFOS 8
+#define MAX_DEBUG_INFOS 100
 
 void
 dumpStack (StgArrWords *stack)
