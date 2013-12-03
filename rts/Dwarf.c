@@ -1132,7 +1132,7 @@ StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos,
                 // Stop recursing to parents then - that would only
                 // dull the precision.
                 stopRecurse = 1; // ARASH: We try to get more output!
-                return info; // ARASH: I don't think makes sense...
+                /* return info; // ARASH: I don't think makes sense... */
             }
             break;
         }
