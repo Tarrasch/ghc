@@ -1093,6 +1093,7 @@ void dwarf_init_lookup(void)
 
 DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 {
+        dwarf_ensure_init();
 	DwarfUnit *unit;
 	for (unit = dwarf_units; unit; unit = unit->next) {
 
@@ -1145,6 +1146,7 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 // You can set infos to NULL, it will then just count (up to max_infos)
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos)
 {
+        dwarf_ensure_init();
 	// Read debug information
 	StgWord8 *dbg = proc->debug_data;
 	StgWord8 *dbg_limit = (StgWord8 *)dwarf_ghc_debug_data + dwarf_ghc_debug_data_size;
