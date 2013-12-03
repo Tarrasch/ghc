@@ -822,6 +822,18 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 	return proc;
 }
 
+// Unlike dwarf_load and dwarf_init_lookup, this function is initializing dwarf
+// completely and acts similar to dwarf_free() because it has no effect when
+// called twice
+void dwarf_ensure_init()
+{
+  if (dwarf_units == NULL && dwarf_ghc_debug_data == NULL) {
+    // Otherwise it's already initialized
+    dwarf_load();
+    dwarf_init_lookup();
+  }
+}
+
 void dwarf_free()
 {
 	DwarfUnit *unit;
@@ -1010,6 +1022,7 @@ void dwarf_init_lookup(void)
 
 DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 {
+        dwarf_ensure_init();
 	DwarfUnit *unit;
 	for (unit = dwarf_units; unit; unit = unit->next) {
 
@@ -1061,6 +1074,7 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos)
 {
+        dwarf_ensure_init();
 	// Read debug information
 	StgWord8 *dbg = proc->debug_data;
 	StgWord8 *dbg_limit = (StgWord8 *)dwarf_ghc_debug_data + dwarf_ghc_debug_data_size;
