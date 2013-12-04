@@ -1186,6 +1186,9 @@ StgWord dwarf_addr_num_infos(void *ip)
 {
     DwarfUnit *unit;
     DwarfProc *proc = dwarf_lookup_proc(ip, &unit);
+    if (proc == NULL) {
+        return 0;
+    }
     const StgWord a_lot = 100;
     StgWord info_count = dwarf_get_debug_info(unit, proc, NULL, a_lot);
     if (info_count == a_lot) {
