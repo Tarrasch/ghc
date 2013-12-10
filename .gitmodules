@@ -1,42 +1,56 @@
 [submodule "libraries/binary"]
+  ignore = dirty
 	path = libraries/binary
 	url = http://git.haskell.org/packages/binary.git
 [submodule "libraries/bytestring"]
+  ignore = dirty
 	path = libraries/bytestring
 	url = http://git.haskell.org/packages/bytestring.git
 [submodule "libraries/Cabal"]
+  ignore = dirty
 	path = libraries/Cabal
 	url = http://git.haskell.org/packages/Cabal.git
 [submodule "libraries/containers"]
+  ignore = dirty
 	path = libraries/containers
 	url = http://git.haskell.org/packages/containers.git
 [submodule "libraries/haskeline"]
+  ignore = dirty
 	path = libraries/haskeline
 	url = http://git.haskell.org/packages/haskeline.git
 [submodule "libraries/pretty"]
+  ignore = dirty
 	path = libraries/pretty
 	url = http://git.haskell.org/packages/pretty.git
 [submodule "libraries/terminfo"]
+  ignore = dirty
 	path = libraries/terminfo
 	url = http://git.haskell.org/packages/terminfo.git
 [submodule "libraries/transformers"]
+  ignore = dirty
 	path = libraries/transformers
 	url = http://git.haskell.org/packages/transformers.git
 [submodule "libraries/xhtml"]
+  ignore = dirty
 	path = libraries/xhtml
 	url = http://git.haskell.org/packages/xhtml.git
 [submodule "libraries/Win32"]
+  ignore = dirty
 	path = libraries/Win32
 	url = http://git.haskell.org/packages/Win32.git
 [submodule "libraries/primitive"]
+  ignore = dirty
 	path = libraries/primitive
 	url = http://git.haskell.org/packages/primitive.git
 [submodule "libraries/vector"]
+  ignore = dirty
 	path = libraries/vector
 	url = http://git.haskell.org/packages/vector.git
 [submodule "libraries/time"]
+  ignore = dirty
 	path = libraries/time
 	url = http://git.haskell.org/packages/time.git
 [submodule "libraries/random"]
+  ignore = dirty
 	path = libraries/random
 	url = http://git.haskell.org/packages/random.git
