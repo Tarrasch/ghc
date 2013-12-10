@@ -6,7 +6,7 @@
  *
  * Documentation on the architecture of the Garbage Collector can be
  * found in the online commentary:
- * 
+ *
  *   http://ghc.haskell.org/trac/ghc/wiki/Commentary/Rts/Storage/GC
  *
  * ---------------------------------------------------------------------------*/
@@ -29,4 +29,3 @@ void    scavenge_capability_mut_Lists1 (Capability *cap);
 #include "EndPrivate.h"
 
 #endif /* SM_SCAV_H */
-
