@@ -2795,6 +2795,7 @@ countStackSize (StgPtr p)
 StgArrWords *
 reifyStack (Capability *cap, StgPtr sp)
 {
+  if(RtsFlags.StackTraceFlags.doAnything) {
     const StgRetInfoTable* ret_info;
     StgWord framecount;
     StgArrWords* reified;
@@ -2833,7 +2834,11 @@ reifyStack (Capability *cap, StgPtr sp)
     }
 
     return reified;
+  } else {
+    return stgAllocArrWords(cap, 0);
+  }
 }
+
 
 /* -----------------------------------------------------------------------------
    dumpStack

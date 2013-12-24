@@ -226,6 +226,10 @@ void initRtsFlagsDefaults(void)
     RtsFlags.TickyFlags.tickyFile        = NULL;
 #endif
 
+//ifdef STACK_TRACE
+    RtsFlags.StackTraceFlags.doAnything  = rtsFalse;
+// ENDif
+
 #ifdef USE_PAPI
     /* By default no special measurements taken */
     RtsFlags.PapiFlags.eventType        = 0;
@@ -284,6 +288,7 @@ usage_text[] = {
 "",
 "  -Z       Don't squeeze out update frames on stack overflow",
 "  -B       Sound the bell at the start of each garbage collection",
+"  --stack-trace      Stack trace ARASH",
 #if defined(PROFILING)
 "",
 "  -p       Time/allocation profile        (output file <program>.prof)",
@@ -756,6 +761,11 @@ error = rtsTrue;
                       OPTION_SAFE;
                       printRtsInfo();
                       stg_exit(0);
+                  }
+                  else if (strequal("stack-trace",
+                               &rts_argv[arg][2])) {
+                      OPTION_UNSAFE;
+                      RtsFlags.StackTraceFlags.doAnything = rtsTrue;
                   }
                   else {
                       OPTION_SAFE;
