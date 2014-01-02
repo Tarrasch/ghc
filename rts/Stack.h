@@ -14,6 +14,17 @@
 
 #include "BeginPrivate.h"
 
+/* countStackSize */
+StgWord countStackSize (StgPtr sp);
+
+/* reifyStack */
+StgArrWords *reifyStack (Capability* cap, StgPtr sp);
+
+void dumpStackStructure (Capability *cap, StgPtr sp);
+
+/* Helper to dump a reified stack */
+void dumpStack (StgArrWords *stack);
+
 #include "EndPrivate.h"
 
 #endif /* STACK_H */
