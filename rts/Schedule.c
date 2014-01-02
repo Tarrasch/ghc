@@ -2802,11 +2802,24 @@ reifyStack (Capability *cap, StgPtr sp)
         else
             p += stack_frame_sizeW((StgClosure *)p);
     }
-
+    dumpStackStructure(cap, sp);
     return reified;
   } else {
     return stgAllocArrWords(cap, 0);
   }
+}
+
+void
+dumpStackStructure (Capability *cap, StgPtr sp)
+{
+    StgPtr p = sp;
+    const StgRetInfoTable* ret_info;
+    while((ret_info = get_ret_itbl((StgClosure *)p)) &&
+          ret_info->i.type != STOP_FRAME &&
+          ret_info->i.type != UNDERFLOW_FRAME) {
+        p += stack_frame_sizeW((StgClosure *)p);
+    }
+    printStackChunk( sp, p);
 }
 
 
