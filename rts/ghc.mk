@@ -277,6 +277,7 @@ STANDARD_OPTS += -DCOMPILING_RTS
 
 rts_CC_OPTS += $(WARNING_OPTS)
 rts_CC_OPTS += $(STANDARD_OPTS)
+rts_CC_OPTS += -DDEBUG
 
 rts_HC_OPTS += $(STANDARD_OPTS) -package-name rts
 

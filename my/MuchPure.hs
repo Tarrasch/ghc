@@ -5,7 +5,7 @@ module Main where
 
 collatz :: Int -> [Int]
 collatz 1 = [1]
-collatz 13 = undefined
+collatz 13 = error "I'm with stupid"
 collatz n = n : if (odd n)
                   then (collatz (3 * n + 1))
                   else (collatz (n `div` 2))
@@ -17,4 +17,4 @@ fib 0 = undefined
 fib 1 = 1
 fib x = fib (x-1) + fib (x-2)
 
-main = print $ fib 10
+main = collatzMain
