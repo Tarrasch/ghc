@@ -15,6 +15,20 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+// It is quite cumbersome to traverse the stack manually, as it's in
+// fact chunked. This macro abstracts away from that.
+//
+// See countStackSize() for an example usage.
+#define TRAVERSE_STACK(sp_var, ret_info_var)                                 \
+            for (;                                                           \
+                 (ret_info_var = get_ret_itbl((StgClosure *)sp_var)) &&      \
+                 ret_info_var->i.type != STOP_FRAME                          \
+                 ;                                                           \
+                 (ret_info_var->i.type == UNDERFLOW_FRAME)                   \
+                   ? (sp_var = ((StgUnderflowFrame*)sp_var)->next_chunk->sp) \
+                   : (sp_var += stack_frame_sizeW((StgClosure *)sp_var))     \
+                )                                                            \
+
 /* -----------------------------------------------------------------------------
    countStackSize
 
@@ -29,15 +43,8 @@ countStackSize (StgPtr p)
     const StgRetInfoTable* ret_info;
     StgWord framecount;
     framecount = 0;
-
-    while((ret_info = get_ret_itbl((StgClosure *)p)) &&
-          ret_info->i.type != STOP_FRAME) {
+    TRAVERSE_STACK(p, ret_info) {
         framecount++;
-
-        if (ret_info->i.type == UNDERFLOW_FRAME)
-            p = ((StgUnderflowFrame*)p)->next_chunk->sp;
-        else
-            p += stack_frame_sizeW((StgClosure *)p);
     }
     return framecount;
 }
@@ -70,8 +77,7 @@ reifyStack (Capability *cap, StgPtr sp)
     // Crawl the stack again, but this time filling in the
     // newly-allocated array
     StgPtr p = sp;
-    while((ret_info = get_ret_itbl((StgClosure *)p)) &&
-          ret_info->i.type != STOP_FRAME) {
+    TRAVERSE_STACK (p, ret_info) {
 #if defined(TABLES_NEXT_TO_CODE)
         if( ((StgClosure *)p)->header.info == &stg_upd_frame_info) {
           // In this case, it's more intersting to point to the function that
@@ -84,10 +90,6 @@ reifyStack (Capability *cap, StgPtr sp)
 #else
         *(reified_payload++) = ret_info->i.entry;
 #endif
-        if (ret_info->i.type == UNDERFLOW_FRAME)
-            p = ((StgUnderflowFrame*)p)->next_chunk->sp;
-        else
-            p += stack_frame_sizeW((StgClosure *)p);
     }
     dumpStackStructure(cap, sp);
     return reified;
