@@ -147,16 +147,16 @@ dumpStack (StgArrWords *stack)
             continue;
         }
 
-        // Put skips
-        if (num_skipped > 0) {
-            debugBelch("     ... %d unknown frames ...\n", num_skipped);
-            num_skipped = 0;
-        }
-
         // Put header
         if (!putHeader) {
             debugBelch("Stack trace:\n");
             putHeader = 1;
+        }
+
+        // Put skips
+        if (num_skipped > 0) {
+            debugBelch("     ... %d unknown frames ...\n", num_skipped);
+            num_skipped = 0;
         }
 
         // Find debug info
