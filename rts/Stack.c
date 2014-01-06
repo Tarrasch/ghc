@@ -50,6 +50,28 @@ countStackSize (StgPtr p)
 }
 
 /* -----------------------------------------------------------------------------
+   getExecuteableCode
+
+   Given a closure object, return a pointer to the executeable code of
+   its info table. In the case of it being some sort of an update frame,
+   then try to return the code of the updatee rather than the code of
+   the update frame.
+   -------------------------------------------------------------------------- */
+StgFunPtr
+getExecuteableCode (StgClosure *p) {
+    if (p->header.info == &stg_upd_frame_info) {
+        // In this case, it's more intersting to point to the function that
+        // the update frame is going to execute
+        p = ((StgUpdateFrame*)p)->updatee;
+    }
+#if defined(TABLES_NEXT_TO_CODE)
+    return *(StgFunPtr *)p;
+#else
+    return get_ret_itbl(p)->i.entry; // (Untested! Not even sure compiles)
+#endif
+}
+
+/* -----------------------------------------------------------------------------
    reifyStack
 
    This function is called by the raise# primitve, to reify the STG stack as an
@@ -78,18 +100,7 @@ reifyStack (Capability *cap, StgPtr sp)
     // newly-allocated array
     StgPtr p = sp;
     TRAVERSE_STACK (p, ret_info) {
-#if defined(TABLES_NEXT_TO_CODE)
-        if( ((StgClosure *)p)->header.info == &stg_upd_frame_info) {
-          // In this case, it's more intersting to point to the function that
-          // the update frame is going to execute
-          *(reified_payload++) = (StgFunPtr)(((StgUpdateFrame*)p)->updatee->header.info);
-        }
-        else {
-          *(reified_payload++) = *(StgFunPtr *)p;
-        }
-#else
-        *(reified_payload++) = ret_info->i.entry;
-#endif
+        *(reified_payload++) = getExecuteableCode((StgClosure*)p);
     }
     dumpStackStructure(cap, sp);
     return reified;

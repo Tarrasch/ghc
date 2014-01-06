@@ -17,6 +17,9 @@
 /* countStackSize */
 StgWord countStackSize (StgPtr sp);
 
+/* getExecuteableCode */
+StgFunPtr getExecuteableCode (StgClosure *p);
+
 /* reifyStack */
 StgArrWords *reifyStack (Capability* cap, StgPtr sp);
 
