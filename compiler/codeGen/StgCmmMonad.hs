@@ -648,7 +648,7 @@ emitLabel :: BlockId -> FCode ()
 emitLabel id = emitCgStmt (CgLabel id)
 
 emitComment :: FastString -> FCode ()
-#if 0 /* def DEBUG */
+#if 1 /* def DEBUG */
 emitComment s = emitCgStmt (CgStmt (CmmComment s))
 #else
 emitComment _ = return ()

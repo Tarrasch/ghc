@@ -49,6 +49,8 @@ import FastString( mkFastString, fsLit )
 import Control.Monad (when)
 import Data.Maybe (isJust)
 
+import Outputable -- Arash
+
 -----------------------------------------------------------
 --              Initialise dynamic heap objects
 -----------------------------------------------------------
@@ -122,7 +124,15 @@ allocDynClosureCmm mb_id info_tbl lf_info use_cc _blame_cc amodes_w_offsets
 
         -- BUMP THE VIRTUAL HEAP POINTER
         ; dflags <- getDynFlags
-        ; setVirtHp (virt_hp + heapClosureSize dflags rep)
+        ; emitComment $ mkFastString $ "Arash is gonna comment all'y'all"
+        ; emitComment $ mkFastString $ showSDoc dflags (ppr info_tbl)
+        ; let (HeapRep _ p np ty) = rep
+        ; emitComment $ mkFastString $ "heapClosureSize = " ++ show (heapClosureSize dflags rep)
+        ; emitComment $ mkFastString $ "closureTypeHdrSize = " ++ show (closureTypeHdrSize dflags ty)
+        ; emitComment $ mkFastString $ "sTD_HDR_SIZE  = " ++ show (sTD_HDR_SIZE dflags)
+        ; emitComment $ mkFastString $ "profHdrSize  = " ++ show (profHdrSize dflags)
+        ; emitComment $ mkFastString $ "sIZEOF_StgSMPThunkHeader = " ++ show (sIZEOF_StgSMPThunkHeader  dflags)
+        ; setVirtHp (virt_hp + heapClosureSize dflags rep + 1250) -- Arash: tihii
 
         ; getHpRelOffset info_offset
         }

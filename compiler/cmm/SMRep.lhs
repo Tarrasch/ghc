@@ -30,7 +30,7 @@ module SMRep (
         isStackRep,
 
         -- ** Size-related things
-        heapClosureSize,
+        heapClosureSize, closureTypeHdrSize,
         fixedHdrSize, arrWordsHdrSize, arrPtrsHdrSize,
         profHdrSize, thunkHdrSize, nonHdrSize,
 
@@ -216,7 +216,7 @@ mkStackRep :: [Bool] -> SMRep
 mkStackRep liveness = StackRep liveness
 
 blackHoleRep :: SMRep
-blackHoleRep = HeapRep False 0 0 BlackHole
+blackHoleRep = HeapRep False 1 0 BlackHole
 
 indStaticRep :: SMRep
 indStaticRep = HeapRep True 1 0 IndStatic

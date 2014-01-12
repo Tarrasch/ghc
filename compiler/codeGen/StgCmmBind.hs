@@ -733,9 +733,12 @@ link_caf node _is_upd = do
   ; let use_cc   = costCentreFrom dflags (CmmReg nodeReg)
         blame_cc = use_cc
         tso      = CmmReg (CmmGlobal CurrentTSO)
+        zero     = CmmLit $ CmmInt 123456 (wordWidth dflags)
 
   ; hp_rel <- allocDynClosureCmm Nothing cafBlackHoleInfoTable mkLFBlackHole
-                                         use_cc blame_cc [(tso,fixedHdrSize dflags)]
+                                         use_cc blame_cc [ (tso,fixedHdrSize dflags)
+                                                         --, (zero, fixedHdrSize dflags + 1)
+                                                         ] -- Arash is guessing lol
         -- small optimisation: we duplicate the hp_rel expression in
         -- both the newCAF call and the value returned below.
         -- If we instead used allocDynClosureReg which assigns it to a reg,

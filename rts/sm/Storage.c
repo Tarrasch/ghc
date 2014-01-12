@@ -394,8 +394,11 @@ newCAF(StgRegTable *reg, StgClosure *caf, StgClosure *bh)
     }
     else
     {
+        //printf("\t\t\tOMG!!!!!!!  %i\n", get_itbl(bh)->layout.payload.nptrs);
+        // bh->payload[1] = ((StgIndStatic *)caf)->saved_info;
+        
         // Put this CAF on the mutable list for the old generation.
-        ((StgIndStatic *)caf)->saved_info = NULL;
+        // ((StgIndStatic *)caf)->saved_info = NULL;
         if (oldest_gen->no != 0) {
             recordMutableCap(caf, regTableToCapability(reg), oldest_gen->no);
         }
