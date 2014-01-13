@@ -337,12 +337,12 @@ freeStorage (rtsBool free_heap)
 
    -------------------------------------------------------------------------- */
 
-STATIC_INLINE StgInd *
+STATIC_INLINE StgBhInd *
 lockCAF (StgRegTable *reg, StgIndStatic *caf)
 {
     const StgInfoTable *orig_info;
     Capability *cap = regTableToCapability(reg);
-    StgInd *bh;
+    StgBhInd *bh;
 
     orig_info = caf->header.info;
 
@@ -372,9 +372,10 @@ lockCAF (StgRegTable *reg, StgIndStatic *caf)
     caf->saved_info = orig_info;
 
     // Allocate the blackhole indirection closure
-    bh = (StgInd *)allocate(cap, sizeofW(*bh));
+    bh = (StgBhInd *)allocate(cap, sizeofW(*bh));
     SET_HDR(bh, &stg_CAF_BLACKHOLE_info, caf->header.prof.ccs);
     bh->indirectee = (StgClosure *)cap->r.rCurrentTSO;
+    bh->original_code = orig_info;
 
     caf->indirectee = (StgClosure *)bh;
     write_barrier();
@@ -383,10 +384,10 @@ lockCAF (StgRegTable *reg, StgIndStatic *caf)
     return bh;
 }
 
-StgInd *
+StgBhInd *
 newCAF(StgRegTable *reg, StgIndStatic *caf)
 {
-    StgInd *bh;
+    StgBhInd *bh;
 
     bh = lockCAF(reg, caf);
     if (!bh) return NULL;
@@ -452,10 +453,10 @@ setKeepCAFs (void)
 //
 // The linker hackily arranges that references to newCaf from dynamic
 // code end up pointing to newDynCAF.
-StgInd *
+StgBhInd *
 newDynCAF (StgRegTable *reg, StgIndStatic *caf)
 {
-    StgInd *bh;
+    StgBhInd *bh;
 
     bh = lockCAF(reg, caf);
     if (!bh) return NULL;

@@ -121,6 +121,12 @@ typedef struct {
 } StgInd;
 
 typedef struct {
+    StgHeader   header;
+    StgClosure *indirectee;
+    const StgInfoTable *original_code; //Arash: For stack tracing
+} StgBhInd;
+
+typedef struct {
     StgHeader     header;
     StgClosure   *indirectee;
     StgClosure   *static_link;
