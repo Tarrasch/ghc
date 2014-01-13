@@ -365,7 +365,7 @@ INFO_TABLE(__stg_EAGER_BLACKHOLE,1,0,BLACKHOLE,"BLACKHOLE","BLACKHOLE")
 // evaluation, and one that points to a closure that is under
 // evaluation by another thread (a BLACKHOLE).  See threadPaused().
 //
-INFO_TABLE(stg_CAF_BLACKHOLE,1,0,BLACKHOLE,"BLACKHOLE","BLACKHOLE")
+INFO_TABLE(stg_CAF_BLACKHOLE,1,1,BLACKHOLE,"BLACKHOLE","BLACKHOLE")
     (P_ node)
 {
     jump ENTRY_LBL(stg_BLACKHOLE) (node);

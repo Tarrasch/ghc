@@ -64,6 +64,10 @@ getExecuteableCode (StgClosure *p) {
         // the update frame is going to execute
         p = ((StgUpdateFrame*)p)->updatee;
     }
+    else if (p->header.info == &stg_bh_upd_frame_info) {
+        p = ((StgUpdateFrame*)p)->updatee;
+        return ((StgBhInd*)(p))->original_code;
+    }
 #if defined(TABLES_NEXT_TO_CODE)
     return *(StgFunPtr *)p;
 #else
