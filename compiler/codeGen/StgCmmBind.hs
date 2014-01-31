@@ -476,6 +476,8 @@ closureCodeBody top_lvl bndr cl_info cc args arity body fv_details
                 ; dflags <- getDynFlags
                 ; let node_points = nodeMustPointToIt dflags lf_info
                       node' = if node_points then Just node else Nothing
+                -- Emit ticks early so heap check is covered
+                ; body' <- cgTicksHeapCheck body
                 -- Emit new label that might potentially be a header
                 -- of a self-recursive tail call. See Note
                 -- [Self-recursive tail calls] in StgCmmExpr
@@ -499,7 +501,7 @@ closureCodeBody top_lvl bndr cl_info cc args arity body fv_details
                 -- Load free vars out of closure *after*
                 -- heap check, to reduce live vars over check
                 ; when node_points $ load_fvs node lf_info fv_bindings
-                ; void $ cgExpr body
+                ; void $ cgExpr body'
                 }}}
 
   }
@@ -564,6 +566,7 @@ thunkCode cl_info fv_details _cc node arity body
         ; ldvEnterClosure cl_info (CmmLocal node) -- NB: Node always points when profiling
 
         -- Heap overflow check
+        ; body' <- cgTicksHeapCheck body
         ; entryHeapCheck cl_info node' arity [] $ do
         { -- Overwrite with black hole if necessary
           -- but *after* the heap-overflow check
@@ -582,7 +585,7 @@ thunkCode cl_info fv_details _cc node arity body
                ; let lf_info = closureLFInfo cl_info
                ; fv_bindings <- mapM bind_fv fv_details
                ; load_fvs node lf_info fv_bindings
-               ; void $ cgExpr body }}}
+               ; void $ cgExpr body' }}}
 
 
 ------------------------------------------------------------------------

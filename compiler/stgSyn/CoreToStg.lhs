@@ -1201,8 +1201,4 @@ stgArity _ (LetBound _ arity) = arity
 stgArity f ImportBound        = idArity f
 stgArity _ LambdaBound        = 0
 
-stripStgTicksTop :: (Tickish Id -> Bool) -> StgExpr -> ([Tickish Id], StgExpr)
-stripStgTicksTop p = go []
-   where go ts (StgTick t e) | p t = go (t:ts) e
-         go ts other               = (reverse ts, other)
 \end{code}

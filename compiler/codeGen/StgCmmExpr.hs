@@ -6,7 +6,7 @@
 --
 -----------------------------------------------------------------------------
 
-module StgCmmExpr ( cgExpr ) where
+module StgCmmExpr ( cgExpr, cgTicksHeapCheck ) where
 
 #define FAST_STRING_NOT_NEEDED
 #include "HsVersions.h"
@@ -498,10 +498,10 @@ cgAlts :: (GcPlan,ReturnKind) -> NonVoid Id -> AltType -> [StgAlt]
        -> FCode ReturnKind
 -- At this point the result of the case are in the binders
 cgAlts gc_plan _bndr PolyAlt [(_, _, _, rhs)]
-  = maybeAltHeapCheck gc_plan (cgExpr rhs)
+  = maybeAltHeapCheck gc_plan . cgExpr =<< cgTicksHeapCheck rhs
 
 cgAlts gc_plan _bndr (UbxTupAlt _) [(_, _, _, rhs)]
-  = maybeAltHeapCheck gc_plan (cgExpr rhs)
+  = maybeAltHeapCheck gc_plan . cgExpr =<< cgTicksHeapCheck rhs
         -- Here bndrs are *already* in scope, so don't rebind them
 
 cgAlts gc_plan bndr (PrimAlt _) alts
@@ -599,9 +599,10 @@ cgAltRhss gc_plan bndr alts = do
     cg_alt :: StgAlt -> FCode (AltCon, CmmAGraph)
     cg_alt (con, bndrs, _uses, rhs)
       = getCodeR                  $
+        cgTicksHeapCheck rhs      >>= \rhs' ->
         maybeAltHeapCheck gc_plan $
         do { _ <- bindConArgs con base_reg bndrs
-           ; _ <- cgExpr rhs
+           ; _ <- cgExpr rhs'
            ; return con }
   forkAlts (map cg_alt alts)
 
@@ -841,3 +842,13 @@ cgTick tick
            CoreNote   b n    -> emitTick $ CoreNote b n
            _other            -> return () -- ignore
        }
+
+-- | Processes all non-counting top-level ticks in the expression,
+-- then returns the remaining code. Used to generate ticks in front of
+-- heap checks.
+cgTicksHeapCheck :: StgExpr -> FCode StgExpr
+cgTicksHeapCheck expr
+  = do { let (ticks, expr') = stripStgTicksTop (not . tickishCounts) expr
+       ; mapM_ cgTick ticks
+       ; return expr' }
+
