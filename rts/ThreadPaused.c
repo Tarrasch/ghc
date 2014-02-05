@@ -234,7 +234,17 @@ threadPaused(Capability *cap, StgTSO *tso)
                 goto end;
             }
 
-	    SET_INFO(frame, (StgInfoTable *)&stg_marked_upd_frame_info);
+            // rtsBool was_update_frame = frame->header.info == &stg_bh_upd_frame_info;
+            rtsBool was_update_frame = rtsFalse;
+            was_update_frame = (frame->header.info == &stg_upd_frame_info
+                || frame->header.info == &stg_bh_upd_frame_info);
+            //was_update_frame = 1;
+            if(rtsTrue || frame->header.info == &stg_upd_frame_info) {
+              // Arash: Only do if update frame, not
+              // stg_bh_upd_frame_info. To improve stack traces
+              SET_INFO(frame, (StgInfoTable *)&stg_marked_upd_frame_info);
+              // was_update_frame = 0;
+            }
 
 	    bh = ((StgUpdateFrame *)frame)->updatee;
             bh_info = bh->header.info;
@@ -273,7 +283,9 @@ threadPaused(Capability *cap, StgTSO *tso)
             // this bug.
             //
             if ((bh_info == &stg_WHITEHOLE_info ||
-                 bh_info == &stg_BLACKHOLE_info)
+                 bh_info == &stg_BLACKHOLE_info
+                 // || bh_info == &stg_CAF_BLACKHOLE_info // Arash
+                 )
                 &&
                 ((StgInd*)bh)->indirectee != (StgClosure*)tso)
             {
@@ -325,7 +337,9 @@ threadPaused(Capability *cap, StgTSO *tso)
             // The payload of the BLACKHOLE points to the TSO
             ((StgInd *)bh)->indirectee = (StgClosure *)tso;
             write_barrier();
-            SET_INFO(bh,&stg_BLACKHOLE_info);
+            if(was_update_frame){
+                SET_INFO(bh,&stg_BLACKHOLE_info);
+            }
 
             // .. and we need a write barrier, since we just mutated the closure:
             recordClosureMutated(cap,bh);

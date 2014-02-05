@@ -59,12 +59,14 @@ countStackSize (StgPtr p)
    -------------------------------------------------------------------------- */
 StgFunPtr
 getExecuteableCode (StgClosure *p) {
+    rtsBool is_marked = p->header.info == &stg_marked_upd_frame_info; // TODO (temp/ remove it)
     if (p->header.info == &stg_upd_frame_info) {
         // In this case, it's more intersting to point to the function that
         // the update frame is going to execute
         p = ((StgUpdateFrame*)p)->updatee;
     }
     else if (p->header.info == &stg_bh_upd_frame_info) {
+        debugBelch("Hi there! :)\n\n");
         p = ((StgUpdateFrame*)p)->updatee;
         return ((StgBhInd*)(p))->original_code;
     }
@@ -106,7 +108,7 @@ reifyStack (Capability *cap, StgPtr sp)
     TRAVERSE_STACK (p, ret_info) {
         *(reified_payload++) = getExecuteableCode((StgClosure*)p);
     }
-    dumpStackStructure(cap, sp);
+    // dumpStackStructure(cap, sp);
     return reified;
   } else {
     return stgAllocArrWords(cap, 0);
