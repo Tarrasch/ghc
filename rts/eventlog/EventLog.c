@@ -217,6 +217,7 @@ static inline void postInt64(EventsBuf *eb, StgInt64 i)
 { postWord64(eb, (StgWord64)i); }
 
 
+GNUC3_ATTRIBUTE(__noreturn__)
 void
 initEventLogging(void)
 {
