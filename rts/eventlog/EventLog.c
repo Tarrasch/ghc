@@ -350,6 +350,7 @@ static StgWord16 getEventSize(EventTypeNum t)
 
 }
 
+GNUC3_ATTRIBUTE(__noreturn__)
 void
 initEventLogging(void)
 {
