@@ -2897,7 +2897,7 @@ dumpStack (StgArrWords *stack)
         // Write what we know
         StgWord j;
         for (j = 0; j < infoCount; j++) {
-            if (!j) debugBelch("%4lu: ", i); else debugBelch("      ");
+            if (j == 0) debugBelch("%4lu: ", i); else debugBelch("      ");
             debugBelch("%s (at %s:%d:%d-%d:%d)\n",
                        infos[j].name, infos[j].file,
                        infos[j].sline, infos[j].scol, infos[j].eline, infos[j].ecol);
