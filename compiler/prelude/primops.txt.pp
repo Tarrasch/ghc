@@ -1643,6 +1643,12 @@ primop  ReifyStackOp "reifyStack#" GenPrimOp
    out_of_line = True
    has_side_effects = True
 
+primop  PushStackFrame "pushStackFrame#" GenPrimOp
+   a -> a
+   with
+   out_of_line = True
+   has_side_effects = True
+
 -- raiseIO# needs to be a primop, because exceptions in the IO monad
 -- must be *precise* - we don't want the strictness analyser turning
 -- one kind of bottom into another, as it is allowed to do in pure code.

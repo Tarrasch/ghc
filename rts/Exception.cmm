@@ -443,6 +443,27 @@ stg_reifyStackzh(P_ exception)
     return (reified_stack);
 }
 
+stg_pushStackFramezh /* explicit stack */
+/*
+ * args : R1 :: Value to evaluate
+ *
+ * Push an artificial frame, then enter the code. Artificial stack
+ * frames improve stack traces (if they are based on the execution
+ * stack). The code of the stack frame only return what it gets. The frame
+ * contain a pointer to the code of the argument of pushStackFrame, so
+ * you can think of pushStackFrame as the opposite of tail calling.
+ */
+{
+    STK_CHK_P_LL (WDS(2), stg_pushStackFramezh, R1);
+
+    W_ entry_code;
+    entry_code = %ENTRY_CODE(%INFO_PTR(UNTAG(R1)));
+    Sp_adj(-2);
+    Sp(0) = stg_artificial_stack_frame_info;
+    Sp(1) = entry_code;
+    ENTER_R1();
+}
+
 stg_raiseWithStackzh /* explicit stack */
 /*
  * args : R1 :: Exception, R2 :: stack

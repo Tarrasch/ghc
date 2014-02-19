@@ -70,6 +70,10 @@ getExecuteableCode (StgClosure *p) {
         p = ((StgUpdateFrame*)p)->updatee;
         return ((StgBhInd*)(p))->original_code;
     }
+    else if (p->header.info == &stg_artificial_stack_frame_info) {
+        debugBelch("Wihii! :)\n\n");
+        return (StgFunPtr)(p->payload[0]);
+    }
 #if defined(TABLES_NEXT_TO_CODE)
     return *(StgFunPtr *)p;
 #else

@@ -51,6 +51,7 @@
 /* Stack frames */
 RTS_RET(stg_upd_frame);
 RTS_RET(stg_bh_upd_frame);
+RTS_RET(stg_artificial_stack_frame);
 RTS_RET(stg_marked_upd_frame);
 RTS_RET(stg_noupd_frame);
 RTS_RET(stg_catch_frame);
