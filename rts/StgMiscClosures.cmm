@@ -19,6 +19,19 @@ import EnterCriticalSection;
 import LeaveCriticalSection;
 
 /* ----------------------------------------------------------------------------
+   Artificial stack frame
+
+   For improved stack traces. See stg_pushStackFramezh in rts/Exception.cmm
+   ------------------------------------------------------------------------- */
+
+INFO_TABLE_RET (stg_artificial_stack_frame, RET_SMALL,
+                W_ info_ptr, W_ unused)
+    return (P_ ret) /* the closure being returned */
+{
+    return (ret);
+}
+
+/* ----------------------------------------------------------------------------
    Stack underflow
    ------------------------------------------------------------------------- */
 

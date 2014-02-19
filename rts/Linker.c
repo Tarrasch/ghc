@@ -1365,6 +1365,7 @@ typedef struct _RtsSymbolVal {
       SymI_HasProto(stg_sel_15_noupd_info)                                \
       SymI_HasProto(stg_upd_frame_info)                                 \
       SymI_HasProto(stg_bh_upd_frame_info)                              \
+      SymI_HasProto(stg_artificial_stack_frame_info)                    \
       SymI_HasProto(suspendThread)                                      \
       SymI_HasProto(stg_takeMVarzh)                                     \
       SymI_HasProto(stg_readMVarzh)                               \
