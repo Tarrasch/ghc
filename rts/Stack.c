@@ -172,7 +172,7 @@ dumpStack (StgArrWords *stack)
 
         // Put skips
         if (num_skipped > 0) {
-            debugBelch("     ... %d unknown frames ...\n", num_skipped);
+            debugBelch("   -- ... %d unknown frames ...\n", num_skipped);
             num_skipped = 0;
         }
 
