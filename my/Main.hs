@@ -1,25 +1,31 @@
 module Main where
 
-printInt x = print (x :: Int)
-
 main :: IO()
-main = do printInt 1
+main = do print 1
           arstoien
-          printInt 2
+          print 2
 
 arstoien, b, c :: IO ()
-arstoien = do printInt 10
+arstoien = do print 10
               b
-              printInt 20
+              print 20
 
-b = do printInt 100
+b = do print 100
        c
-       printInt 200
+       print 200
 
-c = do printInt 1000
-       printInt $ crashSelf 2
-       printInt 2000
+c = do print 1000
+       print $ crashSelf 3
+       print 2000
 
 crashSelf :: Int -> Int
 crashSelf 0 = 1 `div` 0
-crashSelf x = crashSelf (x - 1)
+crashSelf x = x + x + crashSelf (x - 1)
+
+-- Observation, the stack only grows when you append from right
+--
+-- > (crashself ..) + x + x
+--
+-- But not when from left
+--
+-- > x + x + (crashself ..)
