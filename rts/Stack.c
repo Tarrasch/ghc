@@ -38,16 +38,26 @@
    @param p Pointer to the stack, it could typically be `my_tso->stackobj->sp`
    -------------------------------------------------------------------------- */
 StgWord
-countStackSize (StgPtr p)
+countLimitedStackSize (StgPtr p, const int limit)
 {
     const StgRetInfoTable* ret_info;
     StgWord framecount;
     framecount = 0;
     TRAVERSE_STACK(p, ret_info) {
         framecount++;
+        if(limit >= 0 && framecount >= limit) {
+          break;
+        }
     }
     return framecount;
 }
+
+StgWord
+countStackSize (StgPtr p)
+{
+    return countLimitedStackSize(p, -1);
+}
+
 
 /* -----------------------------------------------------------------------------
    getExecuteableCode
@@ -97,7 +107,7 @@ reifyStack (Capability *cap, StgPtr sp)
 
     // Determine the length of the array we need to allocate to
     // store the stack frame pointer array
-    framecount = countStackSize(sp);
+    framecount = countLimitedStackSize(sp, RtsFlags.StackTraceFlags.numFrames);
 
     // Allocate array of that size. The length will be stored in
     // the StgArrWords, so we don't need any terminators
@@ -107,8 +117,12 @@ reifyStack (Capability *cap, StgPtr sp)
     // Crawl the stack again, but this time filling in the
     // newly-allocated array
     StgPtr p = sp;
+    StgWord count = 0;
     TRAVERSE_STACK (p, ret_info) {
         *(reified_payload++) = getExecuteableCode((StgClosure*)p);
+        if (++count >= framecount) {
+          break;
+        }
     }
     dumpStackStructure(cap, sp);
     return reified;
