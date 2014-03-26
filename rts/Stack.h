@@ -16,6 +16,7 @@
 
 /* countStackSize */
 StgWord countStackSize (StgPtr sp);
+StgWord countLimitedStackSize (StgPtr sp, int limit);
 
 /* getExecuteableCode */
 StgFunPtr getExecuteableCode (StgClosure *p);

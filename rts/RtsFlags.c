@@ -221,6 +221,7 @@ void initRtsFlagsDefaults(void)
 
 //ifdef STACK_TRACE
     RtsFlags.StackTraceFlags.doAnything  = rtsFalse;
+    RtsFlags.StackTraceFlags.numFrames  = -1;
 // ENDif
 
 #ifdef USE_PAPI
@@ -274,6 +275,7 @@ usage_text[] = {
 "  -Z       Don't squeeze out update frames on stack overflow",
 "  -B       Sound the bell at the start of each garbage collection",
 "  --stack-trace      Stack trace ARASH",
+"  --reify-x-frames <x>      Number of frames to reify ARASH",
 #if defined(PROFILING)
 "",
 "  -p       Time/allocation profile        (output file <program>.prof)",
@@ -732,6 +734,13 @@ error = rtsTrue;
                                &rts_argv[arg][2])) {
                       OPTION_UNSAFE;
                       RtsFlags.StackTraceFlags.doAnything = rtsTrue;
+                  }
+                  else if (strequal("reify-x-frames",
+                               &rts_argv[arg][2])) {
+                      OPTION_UNSAFE;
+                      RtsFlags.StackTraceFlags.numFrames =
+                        decodeSize(rts_argv[++arg], /* strlen("--reify-x-frames") */ 0, 0, HS_INT_MAX);
+
                   }
                   else {
                       OPTION_SAFE;

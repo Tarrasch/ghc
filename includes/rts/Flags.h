@@ -190,6 +190,7 @@ struct TICKY_FLAGS {
 
 struct STACK_TRACE_FLAGS {
     rtsBool doAnything;
+    nat     numFrames;
 };
 
 #ifdef USE_PAPI
