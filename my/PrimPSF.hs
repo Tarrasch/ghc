@@ -22,5 +22,7 @@ c = do print 1000
        print 2000
 
 crashSelf :: Int -> Int
-crashSelf 0 = 1 `div` 0
+crashSelf 0 = pushStackFrame# killSelf
 crashSelf x = pushStackFrame# (crashSelf (x - 1))
+
+killSelf = 1 `div` 0
