@@ -195,7 +195,7 @@ dumpStack (StgArrWords *stack)
         // Find debug info
         DebugInfo infos[MAX_DEBUG_INFOS];
         StgWord infoCount = dwarf_get_debug_info(unit, proc, infos, MAX_DEBUG_INFOS);
-        if (infoCount == 0) {
+        if (infoCount == 0) { // XXX ARASH  TAMPERED to >=
             debugBelch("%4lu: %s (using %s)\n", i, proc->name, unit->name);
             continue;
         }
