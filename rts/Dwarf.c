@@ -44,11 +44,11 @@
 #endif //USE_DL_ITERATE_PHDR
 
 // Global compilation unit list
-DwarfUnit *dwarf_units = 0;
+DwarfUnit *dwarf_units;
 
 // Debugging data
-size_t dwarf_ghc_debug_data_size = 0;
-void *dwarf_ghc_debug_data = 0;
+size_t dwarf_ghc_debug_data_size;
+void *dwarf_ghc_debug_data;
 
 #define GHC_DEBUG_DATA_SECTION ".debug_ghc"
 
@@ -80,6 +80,12 @@ static DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name, Dwarf_Addr low_pc,
 StgWord16 word16LE(StgWord8 *p);
 
 void dwarf_associate_debug_data(StgBool trace);
+
+void initDwarf() {
+  dwarf_units = NULL;
+  dwarf_ghc_debug_data_size = 0;
+  dwarf_ghc_debug_data = NULL;
+}
 
 #ifndef USE_DL_ITERATE_PHDR
 

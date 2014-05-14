@@ -46,6 +46,12 @@ struct DwarfProc_ {
 
 extern DwarfUnit *dwarf_units;
 
+
+// To be called once when the RTS starts.
+void initDwarf(void);
+
+// These methods can be called many times however, usually not until the
+// Haskell program have actually crashed and one is interested in stack traces.
 void dwarf_load(void);
 DwarfUnit *dwarf_get_unit(char *name);
 DwarfProc *dwarf_get_proc(DwarfUnit *unit, char *name);
