@@ -193,6 +193,10 @@ hs_init_ghc(int *argc, char **argv[], RtsConfig rts_config)
     /* initialize the storage manager */
     initStorage();
 
+#if defined(USE_DWARF)
+    initDwarf();
+#endif
+
     /* initialise the stable pointer table */
     initStableTables();
 
