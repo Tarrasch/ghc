@@ -165,6 +165,7 @@ void dwarf_load()
 	}
 
 	fclose(map_file);
+  dwarf_init_lookup();
 }
 
 #else // USE_DL_ITERATE_PHDR
@@ -192,6 +193,7 @@ void dwarf_load()
 	struct dwarf_state state = { exe_path };
 	dl_iterate_phdr(&dwarf_load_by_phdr, &state);
 
+  dwarf_init_lookup();
 }
 
 int dwarf_load_by_phdr(struct dl_phdr_info *info, size_t size, void *data)
@@ -836,7 +838,6 @@ void dwarf_ensure_init()
   if (dwarf_units == NULL && dwarf_ghc_debug_data == NULL) {
     // Otherwise it's already initialized
     dwarf_load();
-    dwarf_init_lookup();
   }
 }
 
