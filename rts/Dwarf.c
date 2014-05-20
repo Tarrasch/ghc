@@ -92,7 +92,7 @@ void initDwarf() {
 void dwarf_load()
 {
 	// Clear previous data, if any
-	dwarf_free();
+	dwarf_unload();
 
 	// Initialize ELF library
 	if (elf_version(EV_CURRENT) == EV_NONE) {
@@ -831,7 +831,7 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 }
 
 // Unlike dwarf_load and dwarf_init_lookup, this function is initializing dwarf
-// completely and acts similar to dwarf_free() because it has no effect when
+// completely and acts similar to dwarf_unload() because it has no effect when
 // called twice
 void dwarf_ensure_init()
 {
@@ -841,7 +841,7 @@ void dwarf_ensure_init()
   }
 }
 
-void dwarf_free()
+void dwarf_unload()
 {
 	DwarfUnit *unit;
 	while ((unit = dwarf_units)) {
