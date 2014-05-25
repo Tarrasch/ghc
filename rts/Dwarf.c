@@ -50,6 +50,14 @@ DwarfUnit *dwarf_units;
 size_t dwarf_ghc_debug_data_size;
 void *dwarf_ghc_debug_data;
 
+
+#ifdef THREADED_RTS
+// Lock (if multiple threads write to the globals using dwarf_ensure_init())
+Mutex dwarf_mutex;
+#endif
+int dwarf_ref; // When dwarf_ref > 0, then dwarf data should be loaded. But
+               // when it is == 0, it may also be loaded.
+
 #define GHC_DEBUG_DATA_SECTION ".debug_ghc"
 
 #define GHC_DEBUG_NO_ID ((StgWord16) 0xffff)
@@ -63,6 +71,7 @@ struct seg_space_
 };
 typedef struct seg_space_ seg_space;
 
+// Internal helpers
 static void dwarf_get_code_bases(Elf *elf, seg_space *seg);
 static void dwarf_load_ghc_debug_data(Elf *elf);
 static void dwarf_load_symbols(char *file, Elf *elf, seg_space *seg);
@@ -72,6 +81,7 @@ static void dwarf_load_dies(DwarfUnit *unit, Dwarf_Debug dbg, Dwarf_Die die, seg
 static void dwarf_load_proc_die(DwarfUnit *unit, Dwarf_Debug dbg, Dwarf_Die die, seg_space *seg);
 static void dwarf_load_block_die(DwarfUnit *unit, Dwarf_Debug dbg, Dwarf_Die die, seg_space *seg);
 static char *dwarf_findname(Dwarf_Die die);
+static void dwarf_init_lookup(void);
 
 static DwarfUnit *dwarf_new_unit(char *name, char *comp_dir);
 static DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name, Dwarf_Addr low_pc, Dwarf_Addr high_pc,
@@ -85,14 +95,19 @@ void initDwarf() {
   dwarf_units = NULL;
   dwarf_ghc_debug_data_size = 0;
   dwarf_ghc_debug_data = NULL;
+#ifdef THREADED_RTS
+  initMutex(&dwarf_mutex);
+#endif
 }
 
 #ifndef USE_DL_ITERATE_PHDR
 
-void dwarf_load()
+void dwarf_force_load()
 {
-	// Clear previous data, if any
-	dwarf_unload();
+        if (dwarf_units != NULL) {
+                errorBelch("Dwarf is already loaded!");
+                return;
+        }
 
 	// Initialize ELF library
 	if (elf_version(EV_CURRENT) == EV_NONE) {
@@ -165,14 +180,14 @@ void dwarf_load()
 	}
 
 	fclose(map_file);
-  dwarf_init_lookup();
+        dwarf_init_lookup();
 }
 
 #else // USE_DL_ITERATE_PHDR
 
 int dwarf_load_by_phdr(struct dl_phdr_info *info, size_t size, void *data);
 
-void dwarf_load()
+void dwarf_force_load()
 {
 	// Initialize ELF library
 	if (elf_version(EV_CURRENT) == EV_NONE) {
@@ -193,7 +208,7 @@ void dwarf_load()
 	struct dwarf_state state = { exe_path };
 	dl_iterate_phdr(&dwarf_load_by_phdr, &state);
 
-  dwarf_init_lookup();
+        dwarf_init_lookup();
 }
 
 int dwarf_load_by_phdr(struct dl_phdr_info *info, size_t size, void *data)
@@ -830,19 +845,11 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 	return proc;
 }
 
-// Unlike dwarf_load and dwarf_init_lookup, this function is initializing dwarf
-// completely and acts similar to dwarf_unload() because it has no effect when
-// called twice
-void dwarf_ensure_init()
+void dwarf_force_unload()
 {
-  if (dwarf_units == NULL && dwarf_ghc_debug_data == NULL) {
-    // Otherwise it's already initialized
-    dwarf_load();
-  }
-}
-
-void dwarf_unload()
-{
+        if (dwarf_units == NULL) {
+                errorBelch("Dwarf is not even loaded!");
+        }
 	DwarfUnit *unit;
 	while ((unit = dwarf_units)) {
 		dwarf_units = unit->next;
@@ -1038,7 +1045,6 @@ void dwarf_init_lookup(void)
 
 DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 {
-        dwarf_ensure_init();
 	DwarfUnit *unit;
 	for (unit = dwarf_units; unit; unit = unit->next) {
 
@@ -1091,7 +1097,6 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 // You can set infos to NULL, it will then just count (up to max_infos)
 StgWord dwarf_get_debug_info(DwarfUnit *unit, DwarfProc *proc, DebugInfo *infos, StgWord max_infos)
 {
-        dwarf_ensure_init();
 	// Read debug information
 	StgWord8 *dbg = proc->debug_data;
 	StgWord8 *dbg_limit = (StgWord8 *)dwarf_ghc_debug_data + dwarf_ghc_debug_data_size;
@@ -1200,6 +1205,33 @@ StgWord dwarf_addr_num_infos(void *ip)
         errorBelch("Suspiciously much dwarf data. Maybe circular reference?");
     }
     return info_count;
+}
+
+void dwarf_inc_ref(void) {
+        ACQUIRE_LOCK(&dwarf_mutex);
+        dwarf_ref++;
+        if (dwarf_units == NULL) {
+                // If isn't initialized
+                dwarf_force_load();
+        }
+        RELEASE_LOCK(&dwarf_mutex);
+}
+
+void dwarf_dec_ref(void) {
+        ACQUIRE_LOCK(&dwarf_mutex);
+        dwarf_ref--;
+        RELEASE_LOCK(&dwarf_mutex);
+}
+
+StgBool dwarf_try_unload(void) {
+        StgBool will_unload;
+        ACQUIRE_LOCK(&dwarf_mutex);
+        will_unload = dwarf_ref == 0;
+        if (will_unload) {
+                dwarf_force_unload();
+        }
+        RELEASE_LOCK(&dwarf_mutex);
+        return will_unload;
 }
 
 #endif /* USE_DWARF */
