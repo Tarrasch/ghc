@@ -161,8 +161,7 @@ dumpStack (StgArrWords *stack)
 
     // Load dwarf data
     debugBelch("Loading debug data...\n");
-    dwarf_load();
-    dwarf_init_lookup();
+    dwarf_inc_ref();
 
     // Pointer count
     StgFunPtr *ptrs = (StgFunPtr *)stack->payload;
@@ -210,8 +209,7 @@ dumpStack (StgArrWords *stack)
         }
     }
 
-    // Clean up
-    dwarf_free();
+    dwarf_dec_ref(); // We don't care about freeing the memory
 
 #endif
 
