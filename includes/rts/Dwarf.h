@@ -1,8 +1,8 @@
 #ifndef DWARF_H
 #define DWARF_H
 
-// Since you should be able to see this from base, we can't guard on USE_DWARF
-// (But the c-file can)
+// Since you must be able to see this from the base library in Haskell-land,
+// we can't guard on USE_DWARF (But the c-file can and should)
 // #ifdef USE_DWARF
 
 // #include "Hash.h"

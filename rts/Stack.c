@@ -211,7 +211,7 @@ dumpStack (StgArrWords *stack)
         }
     }
 
-    dwarf_dec_ref(); // We don't about freeing the memory
+    dwarf_dec_ref(); // We don't care about freeing the memory
 
 #endif
 
