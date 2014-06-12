@@ -954,6 +954,60 @@ if test "$HaveDwarfLib" = "YES" -a "$HaveDwarfHeader" = "YES" -a "$HaveElfLib" =
    HaveLibDwarf=YES
 else
    HaveLibDwarf=NO
+
+   echo
+   echo
+   echo
+   echo ARASH ARASH ARASH ARASH
+   echo
+   echo
+   echo
+   echo
+   echo "#     # ####### ####### #######"
+   echo "##    # #     # #     # #     #"
+   echo "# #   # #     # #     # #     #"
+   echo "#  #  # #     # #     # #     #"
+   echo "#   # # #     # #     # #     #"
+   echo "#    ## #     # #     # #     #"
+   echo "#     # ####### ####### #######"
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo "NOOOOOOOOOOOOOOOOOOOOOOOOO"
+   echo "                                                HaveDwarfLib = $HaveDwarfLib"
+   echo "                                                HaveDwarfHeader = $HaveDwarfHeader"
+   echo "                                                HaveElfLib = $HaveElfLib"
+   echo "NOOOOOOOOOOOOOOOOOOOOOOOOO"
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo "#     # ####### ####### #######"
+   echo "##    # #     # #     # #     #"
+   echo "# #   # #     # #     # #     #"
+   echo "#  #  # #     # #     # #     #"
+   echo "#   # # #     # #     # #     #"
+   echo "#    ## #     # #     # #     #"
+   echo "#     # ####### ####### #######"
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
+   echo
 fi
 AC_SUBST(HaveLibDwarf)
 
