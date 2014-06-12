@@ -1,0 +1,15 @@
+GhcLibWays      = v dyn
+# GhcCompilerWays = -DDEBUG
+SRC_HC_OPTS     = -O -H64m
+GhcStage1HcOpts = -O -DDEBUG
+GhcStage2HcOpts = -O0 -DDEBUG
+GhcLibHcOpts    = -O0
+SplitObjs          = NO
+HADDOCK_DOCS       = NO
+BUILD_DOCBOOK_HTML = NO
+BUILD_DOCBOOK_PS   = NO
+BUILD_DOCBOOK_PDF  = NO
+
+GhcRtsHcOpts    += -g
+GhcLibHcOpts    += -g
+GhcStage2HcOpts += -g
