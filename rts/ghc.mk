@@ -491,6 +491,10 @@ rts_PACKAGE_CPP_OPTS += -DUSE_DWARF
 rts_PACKAGE_CPP_OPTS += -DDWARF_INCLUDE_DIR=$(DwarfIncludeDir)
 rts_PACKAGE_CPP_OPTS += -DDWARF_LIB_DIR=$(DwarfLibDir)
 else
+$(error You are compiling without DWARF. WHY???? Do rerun ./configure                ARASH ARASH ARASH)
+# I Get this extremely confusing error from time to time. It have pissed me off
+# each time I've made this mistake and hopefully it'll never happen again. Why
+# would anyone compile this stack tracing branch if they don't want DWARF? /Arash
 rts_PACKAGE_CPP_OPTS += -DDWARF_INCLUDE_DIR=
 rts_PACKAGE_CPP_OPTS += -DDWARF_LIB_DIR=
 endif
