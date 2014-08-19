@@ -86,6 +86,7 @@ static void dwarf_init_lookup(void);
 static DwarfUnit *dwarf_new_unit(char *name, char *comp_dir);
 static DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name, Dwarf_Addr low_pc, Dwarf_Addr high_pc,
                                  DwarfSource source, seg_space *seg);
+static int dwarf_is_loaded(); // Only all when you hold mutex
 
 StgWord16 word16LE(StgWord8 *p);
 
@@ -100,11 +101,15 @@ void initDwarf() {
 #endif
 }
 
+int dwarf_is_loaded() {
+  return dwarf_units != NULL;
+}
+
 #ifndef USE_DL_ITERATE_PHDR
 
 void dwarf_force_load()
 {
-        if (dwarf_units != NULL) {
+        if (dwarf_is_loaded()) {
                 errorBelch("Dwarf is already loaded!");
                 return;
         }
@@ -847,7 +852,7 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 
 void dwarf_force_unload()
 {
-        if (dwarf_units == NULL) {
+        if (!dwarf_is_loaded()) {
                 errorBelch("Dwarf is not even loaded!");
         }
 	DwarfUnit *unit;
@@ -1210,7 +1215,7 @@ StgWord dwarf_addr_num_infos(void *ip)
 void dwarf_inc_ref(void) {
         ACQUIRE_LOCK(&dwarf_mutex);
         dwarf_ref++;
-        if (dwarf_units == NULL) {
+        if (!dwarf_is_loaded()) {
                 // If isn't initialized
                 dwarf_force_load();
         }
@@ -1226,7 +1231,7 @@ void dwarf_dec_ref(void) {
 StgBool dwarf_try_unload(void) {
         StgBool will_unload;
         ACQUIRE_LOCK(&dwarf_mutex);
-        will_unload = (dwarf_ref == 0) && (dwarf_units != NULL);
+        will_unload = dwarf_ref == 0 && dwarf_is_loaded();
         if (will_unload) {
                 dwarf_force_unload();
         }
