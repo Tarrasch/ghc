@@ -1226,7 +1226,7 @@ void dwarf_dec_ref(void) {
 StgBool dwarf_try_unload(void) {
         StgBool will_unload;
         ACQUIRE_LOCK(&dwarf_mutex);
-        will_unload = dwarf_ref == 0;
+        will_unload = (dwarf_ref == 0) && (dwarf_units != NULL);
         if (will_unload) {
                 dwarf_force_unload();
         }
