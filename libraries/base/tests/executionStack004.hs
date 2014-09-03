@@ -1,23 +1,26 @@
 import GHC.ExecutionStack
 import Data.List (isInfixOf)
 
--- In this test we check unloading and loading of dwarf
+-- In this test we check loading and unloading of dwarf
 
 main :: IO ()
 main = do
-    someStack <- currentExecutionStack
-    testThatItStartsUnloaded someStack
-    testThatInDwarfWorksAndCanUnloadAfterwards someStack
+    stack <- currentExecutionStack
+    testStartsUnloaded stack
+    testInDwarf stack
+    testUnloading
 
-testThatItStartsUnloaded stack = do
+testStartsUnloaded stack = do
     frames <- getStackFramesNoSync stack
     check $ "Data not found" `isInfixOf` show frames
 
-testThatInDwarfWorksAndCanUnloadAfterwards stack = do
+testInDwarf stack = do
     frames <- getStackFrames stack
     check $ not $ "Data not found" `isInfixOf` show frames
-    dwarfTryUnload >>= check
-    dwarfTryUnload >>= (check . not)
+
+testUnloading = do
+    dwarfTryUnload >>= check  -- Unload successful
+    dwarfTryUnload >>= (check . not)  -- Already unloaded
 
 check :: Bool -> IO ()
 check True  = putStrLn "OK"
