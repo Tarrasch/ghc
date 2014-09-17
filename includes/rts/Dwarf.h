@@ -23,7 +23,7 @@ struct DwarfUnit_ {
 	StgWord proc_count;
 	StgWord16 max_proc_id;
 
-	HashTable *proc_table; // by name // s/HashTable/void
+	HashTable *proc_table; // by name
 	DwarfProc **procs_by_id; // by id
 	DwarfProc **procs_by_pc; // by low_pc
 
@@ -44,6 +44,7 @@ struct DwarfProc_ {
 	void *high_pc;
 	StgWord8 *debug_data;
 	DwarfSource source;
+	StgBool copied;
 	struct DwarfProc_ *next;
 };
 
