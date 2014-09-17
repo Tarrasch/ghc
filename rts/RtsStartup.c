@@ -62,10 +62,6 @@ void exitLinker( void );	// there is no Linker.h file to include
 #include "Papi.h"
 #endif
 
-#if USE_DWARF
-#include "Dwarf.h"
-#endif
-
 // Count of how many outstanding hs_init()s there have been.
 static int hs_init_count = 0;
 
