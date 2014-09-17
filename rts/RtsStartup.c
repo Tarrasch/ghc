@@ -265,9 +265,9 @@ hs_init_ghc(int *argc, char **argv[], RtsConfig rts_config)
 #ifdef TRACING
     // If tracing is active, load and write out debuging information
     if (RtsFlags.TraceFlags.tracing) {
-        dwarf_load();
+        dwarf_inc_ref();
         dwarf_trace_debug_data();
-        dwarf_free();
+        dwarf_dec_ref();
     }
 #endif
 #endif
