@@ -392,7 +392,7 @@ putBlock pid bid block = do
   mapM_ putAnnotEvent (dblTicks block)
   return bid'
 
-putAnnotEvent :: RawTickish -> PutDbgM ()
+putAnnotEvent :: CmmTickish -> PutDbgM ()
 putAnnotEvent (SourceNote ss names) =
   putEvent EVENT_DEBUG_SOURCE $ do
     putDbg $ encLoc $ srcSpanStartLine ss
@@ -402,18 +402,6 @@ putAnnotEvent (SourceNote ss names) =
     putString $ unpackFS $ srcSpanFile ss
     putString names
  where encLoc x = fromIntegral x :: Word16
-
-putAnnotEvent (CoreNote lbl corePtr)
-  -- This piece of core was already covered earlier in this block?
-  = do elem <- elemCoreMap (lbl, exprPtrCons corePtr)
-       when (not elem) $ putEvent EVENT_DEBUG_CORE $ do
-         dflags <- getDynFlags
-         putString $ showSDocDump dflags $ ppr lbl
-         -- Emit core, leaving out (= referencing) any core pieces
-         -- that were emitted from sub-blocks
-         case corePtr of
-           ExprPtr core -> putCoreExpr core >> addToCoreMap lbl DEFAULT
-           AltPtr  alt  -> putCoreAlt alt >> addToCoreMap lbl (fstOf3 alt)
 
 putAnnotEvent _ = return ()
 
