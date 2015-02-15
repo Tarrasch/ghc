@@ -38,6 +38,7 @@ module GHC.ExecutionStack (
   , getStackFrames
   , StackFrame(..)
   , LocationInfo(..)
+  , printExecutionStackRts
   -- * Complicated interface
   -- ** Managed loading/unloading
   , dwarfIncRef
@@ -184,6 +185,13 @@ currentExecutionStack =
     IO (\s -> let (## new_s, byteArray## ##) = reifyStack## s
                   ba = ExecutionStack byteArray##
               in (## new_s, ba ##) )
+
+-- | Pretty print the stack. Will print it to stdout. Note that this
+-- function is faster since it is implemented directly in the RTS.
+printExecutionStackRts :: ExecutionStack -> IO ()
+printExecutionStackRts (ExecutionStack ba) =
+    IO (\s -> let new_s = dumpStack## ba s
+              in (## new_s, () ##))
 
 -- | Tell the dwarf module that you want to use dwarf. Synchronized.
 foreign import ccall "Dwarf.h dwarf_inc_ref" dwarfIncRef :: IO ()

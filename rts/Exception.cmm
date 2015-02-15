@@ -633,3 +633,9 @@ stg_raiseIOzh (P_ exception)
 {
     jump stg_raisezh (exception);
 }
+
+stg_dumpStackzh (P_ reified_stack)
+{
+    ccall dumpStack(reified_stack "ptr");
+    return ();
+}

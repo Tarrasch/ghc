@@ -143,3 +143,73 @@ dumpStackStructure (Capability *cap, StgPtr sp)
     }
     printStackChunk( sp, p);
 }
+
+
+/* -----------------------------------------------------------------------------
+   dumpStack
+
+   Dumps a reified stack to the console.
+   -------------------------------------------------------------------------- */
+
+void
+dumpStack (StgArrWords *stack)
+{
+
+#define MAX_DEBUG_INFOS 100
+#ifdef USE_DWARF
+
+    // Load dwarf data
+    debugBelch("Loading debug data...\n");
+    dwarf_inc_ref();
+
+    // Pointer count
+    StgFunPtr *ptrs = (StgFunPtr *)stack->payload;
+    StgWord ptrCount = stack->bytes / sizeof(void*);
+    StgWord i;
+    StgBool putHeader = 0;
+    int num_skipped = 0;
+    for (i = 0; i < ptrCount; i++) {
+
+        // Lookup PC
+        DwarfUnit *unit;
+        DwarfProc *proc = dwarf_lookup_proc(ptrs[i], &unit);
+        if (!proc) {
+            num_skipped++;
+            continue;
+        }
+
+        // Put header
+        if (!putHeader) {
+            debugBelch("Stack trace:\n");
+            putHeader = 1;
+        }
+
+        // Put skips
+        if (num_skipped > 0) {
+            debugBelch("   -- ... %d unknown frames ...\n", num_skipped);
+            num_skipped = 0;
+        }
+
+        // Find debug info
+        DebugInfo infos[MAX_DEBUG_INFOS];
+        StgWord infoCount = dwarf_get_debug_info(unit, proc, infos, MAX_DEBUG_INFOS);
+        if (infoCount == 0) {
+            debugBelch("%4lu: %s (using %s)\n", i, proc->name, unit->name);
+            continue;
+        }
+
+        // Write what we know
+        StgWord j;
+        for (j = 0; j < infoCount; j++) {
+            if (j == 0) debugBelch("%4lu: ", i); else debugBelch("      ");
+            debugBelch("%s (at %s:%d:%d-%d:%d)\n",
+                       infos[j].name, infos[j].file,
+                       infos[j].sline, infos[j].scol, infos[j].eline, infos[j].ecol);
+        }
+    }
+
+    dwarf_dec_ref(); // We don't care about freeing the memory
+
+#endif
+
+}
