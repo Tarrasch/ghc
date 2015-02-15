@@ -221,6 +221,9 @@ void initRtsFlagsDefaults(void)
     RtsFlags.TickyFlags.tickyFile        = NULL;
 #endif
 
+    RtsFlags.StackTraceFlags.doReify    = rtsFalse;
+    RtsFlags.StackTraceFlags.numFrames  = 100;
+
 #ifdef USE_PAPI
     /* By default no special measurements taken */
     RtsFlags.PapiFlags.eventType        = 0;
@@ -272,6 +275,8 @@ usage_text[] = {
 "",
 "  -Z       Don't squeeze out update frames on stack overflow",
 "  -B       Sound the bell at the start of each garbage collection",
+"  --stack-trace        Enable execution stack based stack traces",
+"  --reify-x-frames <x> Number of frames to reify",
 #if defined(PROFILING)
 "",
 "  -p       Time/allocation profile        (output file <program>.prof)",
@@ -727,6 +732,18 @@ error = rtsTrue;
                       OPTION_SAFE;
                       printRtsInfo();
                       stg_exit(0);
+                  }
+                  else if (strequal("stack-trace",
+                               &rts_argv[arg][2])) {
+                      OPTION_UNSAFE;
+                      RtsFlags.StackTraceFlags.doReify = rtsTrue;
+                  }
+                  else if (strequal("reify-x-frames",
+                               &rts_argv[arg][2])) {
+                      OPTION_UNSAFE;
+                      RtsFlags.StackTraceFlags.numFrames =
+                        decodeSize(rts_argv[++arg], 0, 0, HS_INT_MAX);
+
                   }
                   else {
                       OPTION_SAFE;
