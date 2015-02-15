@@ -213,6 +213,11 @@ typedef struct _TICKY_FLAGS {
     FILE   *tickyFile;
 } TICKY_FLAGS;
 
+typedef struct STACK_TRACE_FLAGS {
+    rtsBool doReify;
+    nat     numFrames;
+} STACK_TRACE_FLAGS;
+
 #ifdef USE_PAPI
 #define MAX_PAPI_USER_EVENTS 8
 
@@ -249,6 +254,7 @@ typedef struct _RTS_FLAGS {
     PROFILING_FLAGS   ProfFlags;
     TRACE_FLAGS       TraceFlags;
     TICKY_FLAGS	      TickyFlags;
+    STACK_TRACE_FLAGS StackTraceFlags;
 
 #if defined(THREADED_RTS)
     PAR_FLAGS	      ParFlags;
