@@ -326,8 +326,18 @@ threadPaused(Capability *cap, StgTSO *tso)
 
             // The payload of the BLACKHOLE points to the TSO
             ((StgInd *)bh)->indirectee = (StgClosure *)tso;
+            ((StgInd *)bh)->extra_field_we_add_to_StgInd = bh_info; // *** Note [arash]
             write_barrier();
             SET_INFO(bh,&stg_BLACKHOLE_info);
+            
+            // *** Note [arash]
+            //
+            // We're incorrectly assuming that thunks can still be converted to StgInd's with this new patch.
+            // 
+            // We know that the a Thunk has at least 1 field in it's payload to fit the `indirectee` field, because
+            // it's payload is always non-empty  (otherwise it would have been a CAF!). But. Now we also force in yet
+            // another field, assuming that Thunks always have space for 2 fields. That is an incorrect assumption
+            // I think.
 
             // .. and we need a write barrier, since we just mutated the closure:
             recordClosureMutated(cap,bh);
