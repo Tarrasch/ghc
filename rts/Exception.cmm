@@ -434,6 +434,24 @@ INFO_TABLE_RET(stg_raise_ret, RET_SMALL, W_ info_ptr, P_ exception)
     jump stg_raisezh (exception);
 }
 
+/* TODO(arash): Why on earth is there "P_ exception" and where it comes from?? */
+stg_reifyStackzh(W_ max_stack_length, P_ exception)
+{
+    W_ reified_stack;
+    ("ptr" reified_stack) = ccall reifyStack (MyCapability() "ptr"
+                                            , Sp "ptr"
+                                            , max_stack_length);
+    return (reified_stack);
+}
+
+/* TODO(arash): Why on earth is there "P_ exception" and where it comes from?? */
+stg_countStackSizzezh(P_ exception)
+{
+    W_ stack_size;
+    (stack_size) = ccall countStackSize (Sp "ptr");
+    return (stack_size);
+}
+
 stg_raisezh /* explicit stack */
 /*
  * args : R1 :: Exception

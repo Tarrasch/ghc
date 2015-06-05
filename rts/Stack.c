@@ -17,7 +17,7 @@
 // It is quite cumbersome to traverse the stack manually, as it's in
 // fact chunked. This macro abstracts away from that.
 //
-// See countLimitedStackSize() for example usage.
+// See countStackSize() for example usage.
 #define TRAVERSE_STACK(sp_var, ret_info_var)                                 \
             for (;                                                           \
                  (ret_info_var = get_ret_itbl((StgClosure *)sp_var)) &&      \
@@ -27,6 +27,25 @@
                    ? (sp_var = ((StgUnderflowFrame*)sp_var)->next_chunk->sp) \
                    : (sp_var += stack_frame_sizeW((StgClosure *)sp_var))     \
                 )                                                            \
+
+/* -----------------------------------------------------------------------------
+   countStackSize
+
+   Count number of frames on the whole stack.
+
+   @param p     Pointer to the stack, typically `my_tso->stackobj->sp`
+   -------------------------------------------------------------------------- */
+StgWord
+countStackSize (StgPtr p)
+{
+    const StgRetInfoTable* ret_info;
+    StgWord framecount;
+    framecount = 0;
+    TRAVERSE_STACK(p, ret_info) {
+        framecount++;
+    }
+    return framecount;
+}
 
 /* -----------------------------------------------------------------------------
    countLimitedStackSize
