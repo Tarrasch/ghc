@@ -14,6 +14,8 @@
 
 #include "BeginPrivate.h"
 
+StgWord countStackSize (StgPtr sp);
+
 StgWord countLimitedStackSize (StgPtr sp, nat limit);
 
 StgArrWords *reifyStack (Capability* cap, StgPtr sp, nat limit);
