@@ -1944,6 +1944,27 @@ primop  RaiseOp "raise#" GenPrimOp
      -- returns bottom independently ensures that we are careful not to discard
      -- it.  But still, it's better to say the Right Thing.
 
+
+-- reifyStack needs to be a primop, as the pure C-function equivalent needs the
+-- Capability as a parameter, and I didn't dare using rts_unsafeGetMyCapability
+--
+-- The Int argument is the maximum length of the result
+primop  ReifyStackOp "reifyStack#" GenPrimOp
+          Int#
+      -> State# RealWorld
+      -> (# State# RealWorld, ByteArray# #) 
+   with
+   out_of_line = True
+   has_side_effects = True
+
+-- Note: Grep for "stg_countStackSizzezh", as the "z" becomes "zz"
+primop  CountStackSizeOp "countStackSize#" GenPrimOp
+         State# RealWorld
+      -> (# State# RealWorld, Int# #) 
+   with
+   out_of_line = True
+   has_side_effects = True
+
 -- raiseIO# needs to be a primop, because exceptions in the IO monad
 -- must be *precise* - we don't want the strictness analyser turning
 -- one kind of bottom into another, as it is allowed to do in pure code.

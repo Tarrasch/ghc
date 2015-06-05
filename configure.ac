@@ -968,6 +968,9 @@ else
 fi
 AC_SUBST(HavePapi)
 
+AC_CHECK_LIB(elf, elf_begin, [HaveElfLib=YES], [HaveElfLib=NO])
+AC_SUBST(HaveElfLib) 
+
 if test "$HAVE_DOCBOOK_XSL" = "NO" ||
    test "$XsltprocCmd" = ""
 then
