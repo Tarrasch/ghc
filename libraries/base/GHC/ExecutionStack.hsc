@@ -34,9 +34,9 @@ module GHC.ExecutionStack (
     printCurrentExecutionStack
   , currentExecutionStack
   , printExecutionStack
-  , currentExecutionStackLimit
   -- * Intermediate interface (May change)
   , ExecutionStack ()
+  , currentExecutionStackLimit
   , getStackFrames
   , StackFrame(..)
   -- * Complicated interface (May change)
