@@ -1958,7 +1958,7 @@ primop  ReifyStackOp "reifyStack#" GenPrimOp
    has_side_effects = True
 
 -- You need the current stg stack pointer to calculate the stack size. So this
--  can't be a pure C-function eiter
+-- can't be a pure C-function eiter
 --
 -- Note: Grep for "stg_countStackSizzezh", as the "z" becomes "zz"
 primop  CountStackSizeOp "countStackSize#" GenPrimOp
