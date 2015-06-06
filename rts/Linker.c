@@ -1213,6 +1213,7 @@ typedef struct _RtsSymbolVal {
       SymI_HasProto(prog_argc)                                          \
       SymI_HasProto(prog_argv)                                          \
       SymI_HasProto(stg_putMVarzh)                                      \
+      SymI_HasProto(stg_reifyStackzh)                                   \
       SymI_HasProto(stg_raisezh)                                        \
       SymI_HasProto(stg_raiseIOzh)                                      \
       SymI_HasProto(stg_readTVarzh)                                     \
