@@ -41,14 +41,11 @@ module GHC.ExecutionStack (
   , StackFrame(..)
   -- * Complicated interface (May change)
   -- ** Managed loading/unloading
-  , inDwarf
-  , dwarfIncRef
-  , dwarfDecRef
-  , dwarfTryUnload
-  , dwarfIsLoaded
-  -- ** Forceful loading/unloading
-  -- , dwarfForceLoad
-  -- , dwarfForceUnload
+  , inCodemap
+  , codemapIncRef
+  , codemapDecRef
+  , codemapTryUnload
+  , codemapIsLoaded
   -- ** Looking inside `ExecutionStack` value
   , stackSize
   , stackIndex
@@ -73,7 +70,7 @@ import Text.Printf (printf)
 import Control.Exception.Base (bracket_)
 
 #include "Rts.h"
-#include "rts/Elf.h"
+#include "rts/Codemap.h"
 
 data ExecutionStack = ExecutionStack
     { unExecutionStack ::  ByteArray##
@@ -94,7 +91,6 @@ data StackFrame = StackFrame
     { unitName      :: !String -- ^ From symbol table
     , procedureName :: !String -- ^ From symbol table
     } deriving Show
-  -- Looking at Dwarf.h, this is one DwarfUnit and many DebugInfos.
 
 -- | Like 'show', without @unlines@
 prepareStackFrame :: StackFrame -> [String]
@@ -121,15 +117,15 @@ displayFrame ix frame = unlines $ zipWith ($) formatters strings
             strings    = prepareStackFrame frame
 
 -- We use these three empty data declarations for type-safety
-data DwarfUnit
-data DwarfProc
+data CodemapUnit
+data CodemapProc
 data Instruction
 
-peekDwarfUnitName :: Ptr DwarfUnit -> IO CString
-peekDwarfUnitName ptr = #{peek struct DwarfUnit_, name } ptr
+peekCodemapUnitName :: Ptr CodemapUnit -> IO CString
+peekCodemapUnitName ptr = #{peek struct CodemapUnit_, name } ptr
 
-peekDwarfProcName :: Ptr DwarfProc -> IO CString
-peekDwarfProcName ptr = #{peek struct DwarfProc_, name } ptr
+peekCodemapProcName :: Ptr CodemapProc -> IO CString
+peekCodemapProcName ptr = #{peek struct CodemapProc_, name } ptr
 
 -- | Print the current execution stack. The result printed to stdout should
 -- look something like this:
@@ -164,53 +160,53 @@ currentExecutionStackLimit (I## i##) =
                   ba = ExecutionStack byteArray##
               in (## new_s, ba ##) )
 
--- | Tell the dwarf module that you want to use dwarf. Synchronized.
-foreign import ccall "Elf.h dwarf_inc_ref" dwarfIncRef :: IO ()
+-- | Tell the codemap module that you want to use codemap. Synchronized.
+foreign import ccall "Codemap.h codemap_inc_ref" codemapIncRef :: IO ()
 
--- | Tell the dwarf module that you are done using dwarf. Synchronized.
-foreign import ccall "Elf.h dwarf_dec_ref" dwarfDecRef :: IO ()
+-- | Tell the codemap module that you are done using codemap. Synchronized.
+foreign import ccall "Codemap.h codemap_dec_ref" codemapDecRef :: IO ()
 
--- | Ask the dwarf module if it can unload and free up memory. It will not be
+-- | Ask the codemap module if it can unload and free up memory. It will not be
 -- able to if the module is in use or if data is not loaded. Synchronized.
 --
--- Returns True if dwarf data was unloaded.
-foreign import ccall "Elf.h dwarf_try_unload" dwarfTryUnload :: IO Bool
+-- Returns True if codemap data was unloaded.
+foreign import ccall "Codemap.h codemap_try_unload" codemapTryUnload :: IO Bool
 
-foreign import ccall "Elf.h dwarf_is_loaded" dwarfIsLoaded :: IO Bool
+foreign import ccall "Codemap.h codemap_is_loaded" codemapIsLoaded :: IO Bool
 
 -- | Lookup an instruction pointer
 --
--- Dwarf module must be loaded to use this!
-foreign import ccall "Elf.h dwarf_lookup_ip"
-    dwarfLookupIp ::
+-- Codemap module must be loaded to use this!
+foreign import ccall "Codemap.h codemap_lookup_ip"
+    codemapLookupIp ::
        Ptr Instruction -- ^ Code address you want information about
-    -> Ptr (Ptr DwarfProc) -- ^ Out: DwarfProc Pointer Pointer
-    -> Ptr (Ptr DwarfUnit) -- ^ Out: DwarfUnit Pointer Pointer
-    -> IO CInt -- ^ TODO(arash): what to say?
+    -> Ptr (Ptr CodemapProc) -- ^ Out: CodemapProc Pointer Pointer
+    -> Ptr (Ptr CodemapUnit) -- ^ Out: CodemapUnit Pointer Pointer
+    -> IO ()
 
-inDwarf :: IO a -> IO a
-inDwarf = bracket_ dwarfIncRef dwarfDecRef
+inCodemap :: IO a -> IO a
+inCodemap = bracket_ codemapIncRef codemapDecRef
 
 getStackFrame ::
        Ptr Instruction -- ^ Instruction Pointer
     -> IO StackFrame -- ^ Result
 getStackFrame ip =
-    inDwarf $ getStackFrameNoSync ip
+    inCodemap $ getStackFrameNoSync ip
 
 getStackFrameNoSync ::
        Ptr Instruction -- ^ Instruction Pointer
     -> IO StackFrame -- ^ Result
 getStackFrameNoSync ip = do
-    alloca $ \ppDwarfProc -> do
-      poke ppDwarfProc nullPtr
-      alloca $ \ppDwarfUnit -> do
-          dwarfLookupIp ip
-                        ppDwarfProc
-                        ppDwarfUnit
-          pDwarfProc <- peek ppDwarfProc
-          pDwarfUnit <- peek ppDwarfUnit
-          unitName <- stringPeekWith peekDwarfUnitName pDwarfUnit
-          procedureName <- stringPeekWith peekDwarfProcName pDwarfProc
+    alloca $ \ppCodemapProc -> do
+      poke ppCodemapProc nullPtr
+      alloca $ \ppCodemapUnit -> do
+          codemapLookupIp ip
+                        ppCodemapProc
+                        ppCodemapUnit
+          pCodemapProc <- peek ppCodemapProc
+          pCodemapUnit <- peek ppCodemapUnit
+          unitName <- stringPeekWith peekCodemapUnitName pCodemapUnit
+          procedureName <- stringPeekWith peekCodemapProcName pCodemapProc
           return StackFrame{..}
 
 -- Note: if you grepped your way to the string "<Data not found>,
@@ -220,7 +216,7 @@ stringPeekWith _peeker ptr | ptr == nullPtr = return "<Data not found>"
 stringPeekWith peeker ptr  | otherwise      = peeker ptr >>= peekCString
 
 getStackFrames :: ExecutionStack -> IO [StackFrame]
-getStackFrames stack = inDwarf $ getStackFramesNoSync stack
+getStackFrames stack = inCodemap $ getStackFramesNoSync stack
 
 getStackFramesNoSync :: ExecutionStack -> IO [StackFrame]
 getStackFramesNoSync = mapM getStackFrameNoSync . stackIndices

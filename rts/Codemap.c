@@ -1,6 +1,6 @@
 #ifdef USE_ELF
 
-#include "rts/Elf.h"
+#include "rts/Codemap.h"
 #include "Rts.h"
 #include "RtsUtils.h"
 
@@ -18,41 +18,43 @@
 
 
 // Global compilation unit list
-DwarfUnit *dwarf_units;
+CodemapUnit *codemap_units;
 
 #ifdef THREADED_RTS
-// Lock (if multiple threads write to the globals using dwarf_ensure_init())
-Mutex dwarf_mutex;
+// Lock (if multiple threads write to the globals using codemap_ensure_init())
+Mutex codemap_mutex;
 #endif
-int dwarf_ref; // When dwarf_ref > 0, then dwarf data should be loaded. But
-               // when it is == 0, it may also be loaded.
+int codemap_ref; // When codemap_ref > 0, then codemap data should be loaded. But
+                 // when it is == 0, it may also be loaded.
 
 
 // Internal helpers
-static void dwarf_load_symbols(char *file, Elf *elf);
+static void codemap_load_symbols(char *module_path, Elf *elf);
 
-static void dwarf_load_file(char *module_path);
-static void dwarf_init_lookup(void);
+static void codemap_load_file(char *module_path);
+static void codemap_init_lookup(void);
+static void codemap_force_load(void);
+static void codemap_force_unload(void);
 
-static DwarfUnit *dwarf_new_unit(char *name, char *comp_dir);
-static DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name, GElf_Addr low_pc, GElf_Addr high_pc);
+static CodemapUnit *codemap_new_unit(char *name, char *comp_dir);
+static CodemapProc *codemap_new_proc(CodemapUnit *unit, char *name, void *low_pc, void *high_pc);
 
-void initDwarf() {
-  dwarf_units = NULL;
-  dwarf_ref = 0;
+void initCodemap() {
+  codemap_units = NULL;
+  codemap_ref = 0;
 #ifdef THREADED_RTS
-  initMutex(&dwarf_mutex);
+  initMutex(&codemap_mutex);
 #endif
 }
 
-int dwarf_is_loaded() {
-  return dwarf_units != NULL;
+int codemap_is_loaded() {
+  return codemap_units != NULL;
 }
 
-void dwarf_force_load()
+void codemap_force_load()
 {
-  if (dwarf_is_loaded()) {
-    errorBelch("Dwarf is already loaded!");
+  if (codemap_is_loaded()) {
+    errorBelch("Codemap is already loaded!");
     return;
   }
 
@@ -62,11 +64,11 @@ void dwarf_force_load()
     return;
   }
 
-  dwarf_load_file(prog_argv[0]);
-  dwarf_init_lookup();
+  codemap_load_file(prog_argv[0]);
+  codemap_init_lookup();
 }
 
-void dwarf_load_file(char *module_path)
+void codemap_load_file(char *module_path)
 {
 
 	// Open the module
@@ -94,27 +96,18 @@ void dwarf_load_file(char *module_path)
 	}
 
 	// Load symbols
-	dwarf_load_symbols(module_path, elf);
+	codemap_load_symbols(module_path, elf);
 
 	elf_end(elf);
 	close(fd);
 }
 
-// Catch-all unit to use where we don't have (or chose to ignore) a
-// "file" entry in the symtab
-#define SYMTAB_UNIT_NAME "SYMTAB: %s"  // TODO(arash): remove
-
-void dwarf_load_symbols(char *file, Elf *elf)
+void codemap_load_symbols(char *module_path, Elf *elf)
 {
 	// Locate symbol table section
 	Elf_Scn *scn = 0; GElf_Shdr hdr;
 	GElf_Shdr sym_shdr;
 	GElf_Half sym_shndx = ~0;
-  size_t shstrndx;
-
-  if (elf_getshdrstrndx(elf, &shstrndx) != 0) {
-    errorBelch("elf_getshdrstrndx() failed: %s.", elf_errmsg(-1));
-  }
 
 	while ((scn = elf_nextscn(elf, scn))) {
 		if (!gelf_getshdr(scn, &hdr))
@@ -126,17 +119,12 @@ void dwarf_load_symbols(char *file, Elf *elf)
 		if (!data)
 			return;
 
-    // TODO(arash): Why did you do this scpmw??? There exists already a unit
-    // name afaict.
-		/* // Find or create the catch-all unit for symtab entries */
-		/* char symtab_unit_name[1024]; */
-		/* snprintf (symtab_unit_name, 1024, SYMTAB_UNIT_NAME, file); */
-    char *symtab_unit_name;
-    if ((symtab_unit_name = elf_strptr(elf, shstrndx, hdr.sh_name)) == NULL)
-      errorBelch("elf_strptr() failed: %s.", elf_errmsg(-1));
+		// Find or create the catch-all unit for symtab entries
+		char symtab_unit_name[1024];
+		snprintf (symtab_unit_name, 1024, "SYMTAB: %s", module_path);
 
-		DwarfUnit *unit = dwarf_get_unit(symtab_unit_name);
-		if (!unit) unit = dwarf_new_unit(symtab_unit_name, "");
+		CodemapUnit *unit = codemap_get_unit(symtab_unit_name);
+		if (!unit) unit = codemap_new_unit(symtab_unit_name, "");
 
 		// Iterate over symbols
 		nat ndx;
@@ -145,14 +133,14 @@ void dwarf_load_symbols(char *file, Elf *elf)
 			// Get symbol data
 			GElf_Sym sym;
 			if (gelf_getsym(data, ndx, &sym) != &sym) {
-				errorBelch("DWARF: Could not read symbol %d: %s\n", ndx, elf_errmsg(-1));
+				errorBelch("CODEMAP: Could not read symbol %d: %s\n", ndx, elf_errmsg(-1));
 				continue;
 			}
 
 			// Look up string
 			char *name = elf_strptr(elf, hdr.sh_link, sym.st_name);
 			if (!name) {
-				errorBelch("DWARF: Could not lookup name for symbol no %d: %s\n", ndx, elf_errmsg(-1));
+				errorBelch("CODEMAP: Could not lookup name for symbol no %d: %s\n", ndx, elf_errmsg(-1));
 				continue;
 			}
 
@@ -193,8 +181,9 @@ void dwarf_load_symbols(char *file, Elf *elf)
 					break;
 
 				// Add procedure
-				dwarf_new_proc(unit, name,
-				               sym.st_value, sym.st_value+sym.st_size
+				codemap_new_proc(unit, name,
+				               (void*) sym.st_value,
+                       (void*) (sym.st_value+sym.st_size)
 				               );
 
 				break;
@@ -205,18 +194,18 @@ void dwarf_load_symbols(char *file, Elf *elf)
 }
 
 
-DwarfUnit *dwarf_get_unit(char *name)
+CodemapUnit *codemap_get_unit(char *name)
 {
-	DwarfUnit *unit;
-	for (unit = dwarf_units; unit; unit = unit->next)
+	CodemapUnit *unit;
+	for (unit = codemap_units; unit; unit = unit->next)
 		if (!strcmp(name, unit->name))
 			return unit;
 	return 0;
 }
 
-DwarfUnit *dwarf_new_unit(char *name, char *comp_dir)
+CodemapUnit *codemap_new_unit(char *name, char *comp_dir)
 {
-	DwarfUnit *unit = (DwarfUnit *)stgMallocBytes(sizeof(DwarfUnit), "dwarf_new_unit");
+	CodemapUnit *unit = (CodemapUnit *)stgMallocBytes(sizeof(CodemapUnit), "codemap_new_unit");
 	unit->name = strdup(name);
 	unit->comp_dir = strdup(comp_dir);
 	unit->low_pc = NULL;
@@ -225,25 +214,25 @@ DwarfUnit *dwarf_new_unit(char *name, char *comp_dir)
 	unit->proc_count = 0;
 	unit->proc_table = allocStrHashTable();
 	unit->procs_by_pc = NULL;
-	unit->next = dwarf_units;
-	dwarf_units = unit;
+	unit->next = codemap_units;
+	codemap_units = unit;
 	return unit;
 }
 
-DwarfProc *dwarf_get_proc(DwarfUnit *unit, char *name)
+CodemapProc *codemap_get_proc(CodemapUnit *unit, char *name)
 {
 	return lookupStrHashTable(unit->proc_table, name);
 }
 
-DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
-                          GElf_Addr low_pc, GElf_Addr high_pc
+CodemapProc *codemap_new_proc(CodemapUnit *unit, char *name,
+                          void *low_pc, void *high_pc
                           )
 {
 	// Security
 	if (high_pc <= low_pc)
 		return NULL;
 
-	DwarfProc *proc = (DwarfProc *)stgMallocBytes(sizeof(DwarfProc), "dwarf_new_proc");
+	CodemapProc *proc = (CodemapProc *)stgMallocBytes(sizeof(CodemapProc), "codemap_new_proc");
 	proc->name = strdup(name);
 	proc->low_pc = low_pc;
 	proc->high_pc = high_pc;
@@ -262,18 +251,18 @@ DwarfProc *dwarf_new_proc(DwarfUnit *unit, char *name,
 	return proc;
 }
 
-void dwarf_force_unload()
+void codemap_force_unload()
 {
-        if (!dwarf_is_loaded()) {
-                errorBelch("Dwarf is not even loaded!");
+        if (!codemap_is_loaded()) {
+                errorBelch("Codemap is not even loaded!");
         }
-	DwarfUnit *unit;
-	while ((unit = dwarf_units)) {
-		dwarf_units = unit->next;
+	CodemapUnit *unit;
+	while ((unit = codemap_units)) {
+		codemap_units = unit->next;
 		freeHashTable(unit->proc_table, NULL);
 		free(unit->procs_by_pc);
 
-		DwarfProc *proc;
+		CodemapProc *proc;
 		while ((proc = unit->procs)) {
 			unit->procs = proc->next;
 			free(proc->name);
@@ -286,12 +275,12 @@ void dwarf_force_unload()
 	}
 }
 
-// Builds up associations between debug and DWARF data.
+// Builds up associations between debug and CODEMAP data.
 
 int compare_low_pc(const void *a, const void *b);
 int compare_low_pc(const void *a, const void *b) {
-	DwarfProc *proca = *(DwarfProc **)a;
-	DwarfProc *procb = *(DwarfProc **)b;
+	CodemapProc *proca = *(CodemapProc **)a;
+	CodemapProc *procb = *(CodemapProc **)b;
 	if (proca->low_pc < procb->low_pc) return -1;
 	if (proca->low_pc == procb->low_pc) {
     return 0;
@@ -300,8 +289,8 @@ int compare_low_pc(const void *a, const void *b) {
 }
 
 // For debbuging purposes
-void dwarf_dump_tables(DwarfUnit *unit);
-void dwarf_dump_tables(DwarfUnit *unit)
+void codemap_dump_tables(CodemapUnit *unit);
+void codemap_dump_tables(CodemapUnit *unit)
 {
 	StgWord i;
 	printf(" Unit %s (%lu procs) %p-%p:\n",
@@ -314,36 +303,36 @@ void dwarf_dump_tables(DwarfUnit *unit)
 	}
 }
 
-void dwarf_init_lookup(void)
+void codemap_init_lookup(void)
 {
 	// Build procedure tables for every unit
-	DwarfUnit *unit;
-	for (unit = dwarf_units; unit; unit = unit->next) {
+	CodemapUnit *unit;
+	for (unit = codemap_units; unit; unit = unit->next) {
 
 		// Just in case we run this twice for some reason
 		free(unit->procs_by_pc); unit->procs_by_pc = NULL;
 
 		// Allocate tables
-		StgWord pcTableSize = unit->proc_count * sizeof(DwarfProc *);
-		unit->procs_by_pc = (DwarfProc **)stgMallocBytes(pcTableSize, "dwarf_init_pc_table");
+		StgWord pcTableSize = unit->proc_count * sizeof(CodemapProc *);
+		unit->procs_by_pc = (CodemapProc **)stgMallocBytes(pcTableSize, "codemap_init_pc_table");
 
 		// Populate
 		StgWord i = 0;
-		DwarfProc *proc;
+		CodemapProc *proc;
 		for (proc = unit->procs; proc; proc = proc->next) {
 			unit->procs_by_pc[i++] = proc;
 		}
 
 		// Sort PC table by low_pc
-		qsort(unit->procs_by_pc, unit->proc_count, sizeof(DwarfProc *), compare_low_pc);
+		qsort(unit->procs_by_pc, unit->proc_count, sizeof(CodemapProc *), compare_low_pc);
 
 	}
 }
 
-DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
+CodemapProc *codemap_lookup_proc(void *ip, CodemapUnit **punit)
 {
-	DwarfUnit *unit;
-	for (unit = dwarf_units; unit; unit = unit->next) {
+	CodemapUnit *unit;
+	for (unit = codemap_units; unit; unit = unit->next) {
 
 		// Pointer in unit range?
 		if (ip < unit->low_pc || ip >= unit->high_pc)
@@ -363,11 +352,11 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 
 		// Find an entry covering it
 		while (low > 0) {
-			DwarfProc *proc = unit->procs_by_pc[low-1];
+			CodemapProc *proc = unit->procs_by_pc[low-1];
 
 			// Security
 			if (ip < proc->low_pc) {
-				debugBelch("DWARF lookup: PC table corruption!");
+				debugBelch("CODEMAP lookup: PC table corruption!");
 				break;
 			}
 
@@ -378,10 +367,6 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 				return proc;
 			}
 
-			/* // Not a block? Stop search */
-			/* if (proc->source != DwarfSourceDwarfBlock) */
-			/* 	break; */
-
 			// Otherwise backtrack
 			low--;
 		}
@@ -391,68 +376,62 @@ DwarfProc *dwarf_lookup_proc(void *ip, DwarfUnit **punit)
 	return NULL;
 }
 
-StgWord dwarf_lookup_ip(void *ip, DwarfProc **p_proc, DwarfUnit **p_unit)
+void codemap_lookup_ip(void *ip, CodemapProc **p_proc, CodemapUnit **p_unit)
 {
-    *p_proc = dwarf_lookup_proc(ip, p_unit);
-    if (*p_proc == NULL) {
-        return 0;
-    }
-    return 1;
+    *p_proc = codemap_lookup_proc(ip, p_unit);
 }
 
-void dwarf_inc_ref(void) {
-        ACQUIRE_LOCK(&dwarf_mutex);
-        dwarf_ref++;
-        if (!dwarf_is_loaded()) {
+void codemap_inc_ref(void) {
+        ACQUIRE_LOCK(&codemap_mutex);
+        codemap_ref++;
+        if (!codemap_is_loaded()) {
                 // If isn't initialized
-                dwarf_force_load();
+                codemap_force_load();
         }
-        RELEASE_LOCK(&dwarf_mutex);
+        RELEASE_LOCK(&codemap_mutex);
 }
 
-void dwarf_dec_ref(void) {
-        ACQUIRE_LOCK(&dwarf_mutex);
-        dwarf_ref--;
-        RELEASE_LOCK(&dwarf_mutex);
+void codemap_dec_ref(void) {
+        ACQUIRE_LOCK(&codemap_mutex);
+        codemap_ref--;
+        RELEASE_LOCK(&codemap_mutex);
 }
 
-StgBool dwarf_try_unload(void) {
+StgBool codemap_try_unload(void) {
         StgBool will_unload;
-        ACQUIRE_LOCK(&dwarf_mutex);
-        will_unload = dwarf_ref == 0 && dwarf_is_loaded();
+        ACQUIRE_LOCK(&codemap_mutex);
+        will_unload = codemap_ref == 0 && codemap_is_loaded();
         if (will_unload) {
-                dwarf_force_unload();
+                codemap_force_unload();
         }
-        RELEASE_LOCK(&dwarf_mutex);
+        RELEASE_LOCK(&codemap_mutex);
         return will_unload;
 }
 
 #else /* USE_ELF */
 
 #include "Rts.h"
-#include "rts/Elf.h"
+#include "rts/Codemap.h"
 
-StgWord dwarf_lookup_ip(void *ip, DwarfProc **p_proc, DwarfUnit **p_unit)
+void codemap_lookup_ip(void *ip, CodemapProc **p_proc, CodemapUnit **p_unit)
 {
-    *p_proc = NULL;
+    *p_proc = NULL; // Signal failure
     *p_unit = NULL;
+}
+
+
+void codemap_inc_ref(void) {
+}
+
+void codemap_dec_ref(void) {
+}
+
+StgBool codemap_try_unload(void) {
     return 0;
 }
 
-
-void dwarf_inc_ref(void) {
-}
-
-void dwarf_dec_ref(void) {
-}
-
-StgBool dwarf_try_unload(void) {
-    return 0;
-}
-
-StgBool dwarf_is_loaded(void) {
+StgBool codemap_is_loaded(void) {
     return 0;
 }
 
 #endif /* USE_ELF */
-
