@@ -24,9 +24,9 @@ CodemapUnit *codemap_units;
 // Lock (if multiple threads write to the globals using codemap_ensure_init())
 Mutex codemap_mutex;
 #endif
-int codemap_ref; // When codemap_ref > 0, then codemap data should be loaded. But
-                 // when it is == 0, it may also be loaded.
 
+/* if codemap_ref > 0, then codemap data is loaded (not iff). */
+int codemap_ref;
 
 // Internal helpers
 static void codemap_load_symbols(char *module_path, Elf *elf);

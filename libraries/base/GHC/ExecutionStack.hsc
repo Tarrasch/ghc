@@ -144,13 +144,7 @@ printCurrentExecutionStack = currentExecutionStack >>= printExecutionStack
 
 -- | Reify the stack. This is the only way to get an ExecutionStack value.
 currentExecutionStack :: IO (ExecutionStack)
-currentExecutionStack = countStackSize >>= currentExecutionStackLimit
-
-countStackSize :: IO (Int)
-countStackSize =
-    IO (\s -> let (## new_s, size## ##) = countStackSize## s
-                  size = I## size##
-              in (## new_s, size ##) )
+currentExecutionStack = currentExecutionStackLimit (maxBound :: Int)
 
 
 currentExecutionStackLimit :: Int -> IO (ExecutionStack)

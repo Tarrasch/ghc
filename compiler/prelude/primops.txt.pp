@@ -1957,17 +1957,6 @@ primop  ReifyStackOp "reifyStack#" GenPrimOp
    out_of_line = True
    has_side_effects = True
 
--- You need the current stg stack pointer to calculate the stack size. So this
--- can't be a pure C-function eiter
---
--- Note: Grep for "stg_countStackSizzezh", as the "z" becomes "zz"
-primop  CountStackSizeOp "countStackSize#" GenPrimOp
-         State# RealWorld
-      -> (# State# RealWorld, Int# #)
-   with
-   out_of_line = True
-   has_side_effects = True
-
 -- raiseIO# needs to be a primop, because exceptions in the IO monad
 -- must be *precise* - we don't want the strictness analyser turning
 -- one kind of bottom into another, as it is allowed to do in pure code.
