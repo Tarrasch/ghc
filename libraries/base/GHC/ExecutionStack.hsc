@@ -46,7 +46,7 @@ module GHC.ExecutionStack (
   , codemapDecRef
   , codemapTryUnload
   , codemapIsLoaded
-  -- ** Looking inside `ExecutionStack` value
+  -- ** Looking inside the `ExecutionStack` value
   , stackSize
   , stackIndex
   , stackIndices
