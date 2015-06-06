@@ -16,8 +16,6 @@
 
 // It is quite cumbersome to traverse the stack manually, as it's in
 // fact chunked. This macro abstracts away from that.
-//
-// See countStackLength() for example usage.
 #define TRAVERSE_STACK(sp_var, ret_info_var)                                 \
             for (;                                                           \
                  (ret_info_var = get_ret_itbl((StgClosure *)sp_var)) &&      \
@@ -33,16 +31,16 @@
 
    Count number of frames on the whole stack.
 
-   @param p     Pointer to the stack, typically `my_tso->stackobj->sp`
+   @param sp    Pointer to the stack, typically `my_tso->stackobj->sp`
    @param limit Stop search after limit frames and return limit
    -------------------------------------------------------------------------- */
 StgWord
-countLimitedStackSize (StgPtr p, const nat limit)
+countLimitedStackSize (StgPtr sp, const nat limit)
 {
     const StgRetInfoTable* ret_info;
     StgWord framecount;
     framecount = 0;
-    TRAVERSE_STACK(p, ret_info) {
+    TRAVERSE_STACK(sp, ret_info) {
         if(framecount >= limit) {
             return framecount;
         }
@@ -73,8 +71,12 @@ getExecutableCode (StgClosure *p) {
 /* -----------------------------------------------------------------------------
    reifyStack
 
-   This function is called by the raise# primitve, to reify the STG stack as an
-   array of code pointers
+   Reify a stack.  This function travereses the stack and copies over just the
+   info pointers (not the payloads).
+
+   @param cap   Capability into which we allocate memory.
+   @param sp    Pointer to the stack, typically `my_tso->stackobj->sp`.
+   @param limit Don't reify more than the first limit frames.
    -------------------------------------------------------------------------- */
 StgArrWords *
 reifyStack (Capability *cap, StgPtr sp, nat limit)
