@@ -11,23 +11,23 @@ typedef struct CodemapUnit_ CodemapUnit;
 typedef struct CodemapProc_ CodemapProc;
 
 struct CodemapUnit_ {
-	char *name;
-	char *comp_dir;
-	void *low_pc, *high_pc;
-	CodemapProc *procs;
-	StgWord proc_count;
+    char *name;
+    char *comp_dir;
+    void *low_pc, *high_pc;
+    CodemapProc *procs;
+    StgWord proc_count;
 
-	HashTable *proc_table; // by name // s/HashTable/void
-	CodemapProc **procs_by_pc; // by low_pc
+    HashTable *proc_table; // by name // s/HashTable/void
+    CodemapProc **procs_by_pc; // by low_pc
 
-	CodemapUnit *next;
+    CodemapUnit *next;
 };
 
 struct CodemapProc_ {
-	char *name;
-	void *low_pc;
-	void *high_pc;
-	struct CodemapProc_ *next;
+    char *name;
+    void *low_pc;
+    void *high_pc;
+    struct CodemapProc_ *next;
 };
 
 extern CodemapUnit *codemap_units;
@@ -50,9 +50,7 @@ extern CodemapUnit *codemap_units;
 //  do "half-loading". No work has been started on this as of yet, but some
 //  interested discussion can be found in this disussion on github:
 //
-//    https://github.com/scpmw/ghc/commit/bbf6f35d8c341c8aadca1a48657084c007837b21#commitcomment-5527280
-//
-//  (Arash May 2014)
+//    https://github.com/scpmw/ghc/commit/bbf6f35#commitcomment-5527280
 
 // To be called once when the RTS starts.
 void initCodemap(void);
@@ -73,8 +71,8 @@ CodemapUnit *codemap_get_unit(char *name);
 CodemapProc *codemap_get_proc(CodemapUnit *unit, char *name);
 CodemapProc *codemap_lookup_proc(void *ip, CodemapUnit **punit);
 void codemap_lookup_ip(void *ip,
-    CodemapProc **p_proc, /* in OR out */
-    CodemapUnit **p_unit /* out */
-    );
+        CodemapProc **p_proc, /* in OR out */
+        CodemapUnit **p_unit /* out */
+        );
 
 #endif // CODEMAP_H
