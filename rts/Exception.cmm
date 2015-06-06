@@ -434,8 +434,7 @@ INFO_TABLE_RET(stg_raise_ret, RET_SMALL, W_ info_ptr, P_ exception)
     jump stg_raisezh (exception);
 }
 
-/* TODO(arash): Why on earth is there "P_ exception" and where it comes from?? */
-stg_reifyStackzh(W_ max_stack_length, P_ exception)
+stg_reifyStackzh(W_ max_stack_length)
 {
     W_ reified_stack;
     ("ptr" reified_stack) = ccall reifyStack (MyCapability() "ptr"
