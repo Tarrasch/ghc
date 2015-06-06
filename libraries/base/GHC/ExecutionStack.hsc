@@ -62,7 +62,6 @@ import GHC.Ptr (Ptr(Ptr))
 import GHC.Prim (ByteArray##, sizeofByteArray##, indexAddrArray##)
 import GHC.Prim (reifyStack##, countStackSize##)
 import Foreign.C.String (peekCString, CString)
-import Foreign.C.Types (CInt (..))
 import Foreign.Ptr (nullPtr)
 import Foreign.Storable (Storable(..))
 import Foreign.Marshal (alloca)
@@ -149,9 +148,9 @@ currentExecutionStack = countStackSize >>= currentExecutionStackLimit
 
 countStackSize :: IO (Int)
 countStackSize =
-    IO (\s -> let (## new_s, stackSize## ##) = countStackSize## s
-                  stackSize = I## stackSize##
-              in (## new_s, stackSize ##) )
+    IO (\s -> let (## new_s, size## ##) = countStackSize## s
+                  size = I## size##
+              in (## new_s, size ##) )
 
 
 currentExecutionStackLimit :: Int -> IO (ExecutionStack)
