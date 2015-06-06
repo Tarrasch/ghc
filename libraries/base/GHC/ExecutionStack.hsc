@@ -69,7 +69,6 @@ import Text.Printf (printf)
 import Control.Exception.Base (bracket_)
 
 #include "Rts.h"
-#include "rts/Codemap.h"
 
 data ExecutionStack = ExecutionStack
     { unExecutionStack ::  ByteArray##
